@@ -353,13 +353,100 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){.right-panel{display:none}}
-@media(max-width:750px){.convo-panel{width:230px}}
+@media(max-width:750px){.convo-panel{width:240px}}
+
+/* ── MOBILE ── */
 @media(max-width:600px){
-  .convo-panel{position:fixed;left:0;top:56px;bottom:0;z-index:50;width:290px;transform:translateX(-110%);transition:transform .25s cubic-bezier(.4,0,.2,1)}
-  .convo-panel.open{transform:translateX(0);box-shadow:4px 0 20px rgba(0,0,0,.4)}
-  .nav{width:54px}
-  .view{padding:20px 18px}
-  .top{padding:0 12px;gap:8px}
+  /* hide desktop nav, show bottom bar */
+  .nav{display:none}
+  .right-panel{display:none}
+
+  /* full width convo panel slides over */
+  .convo-panel{
+    position:fixed;left:0;top:0;bottom:0;z-index:200;
+    width:88vw;max-width:320px;
+    transform:translateX(-110%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+    border-right:1px solid var(--border2);
+  }
+  .convo-panel.open{transform:translateX(0);box-shadow:8px 0 32px rgba(0,0,0,.6)}
+
+  /* dim overlay behind convo panel */
+  .convo-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;backdrop-filter:blur(2px)}
+  .convo-overlay.on{display:block}
+
+  /* chat area takes full screen */
+  .chat-area{width:100%;min-width:0}
+
+  /* topbar compact */
+  .top{padding:0 12px;gap:8px;height:52px}
+  .top-logo{font-size:16px;letter-spacing:4px}
+  .top-search{display:none}
+
+  /* chat header compact */
+  .chat-head{padding:0 12px;gap:8px;height:52px}
+  .ch-name{font-size:13.5px}
+
+  /* messages padding */
+  .msgs-wrap{padding:12px 12px}
+
+  /* bigger tap targets for bubbles */
+  .bubble{font-size:14px;padding:10px 13px}
+
+  /* input zone */
+  .input-zone{padding:8px 10px}
+  .input-row{gap:6px}
+  .it{width:36px;height:36px}
+  textarea.msg-txt{font-size:14px;padding:9px 12px}
+  .send-btn{width:42px;height:42px}
+
+  /* views */
+  .view{padding:16px 14px}
+  .view-hd{font-size:18px}
+  .people-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .pcard{padding:14px 10px}
+
+  /* feed composer */
+  .composer{padding:12px;gap:8px}
+  .post-card{padding:14px}
+
+  /* modals full screen on mobile */
+  .overlay{padding:0;align-items:flex-end}
+  .modal{border-radius:var(--r20) var(--r20) 0 0;width:100%;max-width:100%;max-height:92vh;padding:24px 20px}
+
+  /* auth card */
+  .auth-card{padding:32px 22px;border-radius:var(--r16)}
+
+  /* bottom nav bar */
+  #bottom-nav{display:flex}
+}
+
+/* Bottom nav — hidden on desktop */
+#bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(10,10,18,.97);
+  border-top:1px solid var(--border);
+  backdrop-filter:blur(20px);
+  z-index:100;
+  padding:6px 0 calc(6px + env(safe-area-inset-bottom));
+  justify-content:space-around;
+  align-items:center;
+}
+.bn-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 20px;border-radius:var(--r12);cursor:pointer;
+  transition:all .15s;color:var(--t4);border:none;background:none;
+  min-width:56px;
+}
+.bn-btn.on{color:var(--cyan)}
+.bn-icon{font-size:20px;line-height:1}
+.bn-lbl{font-size:9px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase}
+
+/* account for bottom nav height on mobile */
+@media(max-width:600px){
+  .body{padding-bottom:60px}
+  #app{padding-bottom:0}
 }
 </style>
 </head>
@@ -579,6 +666,28 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- MOBILE CONVO OVERLAY -->
+<div class="convo-overlay" id="convo-overlay" onclick="closeMobileConvos()"></div>
+
+<!-- BOTTOM NAV (mobile only) -->
+<nav id="bottom-nav">
+  <button class="bn-btn on" id="bn-chat" onclick="setView('chat',document.getElementById('nav-chat'));bnActive('bn-chat')">
+    <span class="bn-icon">💬</span><span class="bn-lbl">chat</span>
+  </button>
+  <button class="bn-btn" id="bn-msgs" onclick="toggleMobileConvos()">
+    <span class="bn-icon">✉️</span><span class="bn-lbl">msgs</span>
+  </button>
+  <button class="bn-btn" id="bn-people" onclick="setView('people',document.getElementById('nav-people'));bnActive('bn-people')">
+    <span class="bn-icon">🌍</span><span class="bn-lbl">meet</span>
+  </button>
+  <button class="bn-btn" id="bn-feed" onclick="setView('feed',document.getElementById('nav-feed'));bnActive('bn-feed')">
+    <span class="bn-icon">📰</span><span class="bn-lbl">feed</span>
+  </button>
+  <button class="bn-btn" onclick="openModal('profile-modal')">
+    <span class="bn-icon">👤</span><span class="bn-lbl">me</span>
+  </button>
+</nav>
 
 <script>
 const SURL='https://pvahgjdvgcnkozprszya.supabase.co';
@@ -1329,10 +1438,27 @@ function setView(id,el){
   document.getElementById('view-feed').classList.toggle('on',id==='feed');
   if(id==='people')loadUsers();
   if(id==='feed')loadFeed();
+  // sync bottom nav
+  const map={chat:'bn-chat',people:'bn-people',feed:'bn-feed'};
+  if(map[id])bnActive(map[id]);
 }
 
-function toggleMobileConvos(){document.getElementById('convo-panel').classList.toggle('open');}
-function closeMobileConvos(){document.getElementById('convo-panel').classList.remove('open');}
+function toggleMobileConvos(){
+  const panel=document.getElementById('convo-panel');
+  const overlay=document.getElementById('convo-overlay');
+  const isOpen=panel.classList.contains('open');
+  panel.classList.toggle('open',!isOpen);
+  overlay.classList.toggle('on',!isOpen);
+}
+function closeMobileConvos(){
+  document.getElementById('convo-panel').classList.remove('open');
+  document.getElementById('convo-overlay').classList.remove('on');
+}
+function bnActive(id){
+  document.querySelectorAll('.bn-btn').forEach(b=>b.classList.remove('on'));
+  const el=document.getElementById(id);
+  if(el)el.classList.add('on');
+}
 
 // ── MODALS ──
 function openModal(id){document.getElementById(id).classList.add('on');}
