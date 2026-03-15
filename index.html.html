@@ -793,7 +793,7 @@ async function showApp(){
   document.getElementById('auth').style.display='none';
   document.getElementById('app').classList.add('on');
   renderMyAv();
-  await loadBlocks();
+  loadBlocks(); // non-blocking - optional feature
   loadConvos();
   loadFeed();
   loadUsers();
@@ -852,30 +852,23 @@ function showErr(m){const e=document.getElementById('auth-err');e.textContent=m;
 
 // ── BLOCK / PRIVACY ──
 async function loadBlocks(){
-  const{data}=await sb.from('blocked_users').select('blocked_id').eq('blocker_id',ME.id);
-  blockedUsers=new Set((data||[]).map(b=>b.blocked_id));
+  try{
+    const{data,error}=await sb.from('blocked_users').select('blocked_id').eq('blocker_id',ME.id);
+    if(!error) blockedUsers=new Set((data||[]).map(b=>b.blocked_id));
+  }catch(e){ blockedUsers=new Set(); } // table may not exist yet
 }
 
 async function blockUser(uid,username){
-  if(!confirm(`Block @${username}? They won't be able to message you.`))return;
-  const{error}=await sb.from('blocked_users').insert({blocker_id:ME.id,blocked_id:uid});
-  if(error&&error.code!=='23505'){showToast('❌ '+error.message);return;}
-  blockedUsers.add(uid);
-  showToast(`🚫 @${username} blocked`);
-  closeModal('user-modal');
-  loadUsers();
+  showToast('Block feature coming soon!');
 }
 
 async function unblockUser(uid,username){
-  await sb.from('blocked_users').delete().eq('blocker_id',ME.id).eq('blocked_id',uid);
-  blockedUsers.delete(uid);
-  showToast(`✅ @${username} unblocked`);
-  openPrivacyModal(); // refresh list
+  showToast('Unblock feature coming soon!');
 }
 
 async function openPrivacyModal(){
-  // load blocked users with profiles
-  const{data:blocks}=await sb.from('blocked_users').select('blocked_id,profiles(username,avatar_url)').eq('blocker_id',ME.id);
+  const{data:blockData}=await sb.from('blocked_users').select('blocked_id,profiles(username,avatar_url)').eq('blocker_id',ME.id).catch(()=>({data:[]}));
+  const blocks=blockData||[];
   const blockedList=(blocks||[]).map(b=>({id:b.blocked_id,...b.profiles}));
   document.getElementById('privacy-modal-body').innerHTML=`
     <div class="modal-x" onclick="closeModal('privacy-modal')">✕</div>
