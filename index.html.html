@@ -879,8 +879,13 @@ async function unblockUser(uid,username){
 }
 
 async function openBlockedList(){
-  const{data:blockData}=await sb.from('blocked_users').select('blocked_id,profiles(username,avatar_url)').eq('blocker_id',ME.id);
-  const blocks=(blockData||[]).map(b=>({id:b.blocked_id,...(b.profiles||{})}));
+  const{data:blockData}=await sb.from('blocked_users').select('blocked_id').eq('blocker_id',ME.id);
+  const uids=(blockData||[]).map(b=>b.blocked_id);
+  let blocks=[];
+  if(uids.length){
+    const{data:profs}=await sb.from('profiles').select('*').in('id',uids);
+    blocks=(profs||[]).map(p=>({id:p.id,username:p.username,avatar_url:p.avatar_url}));
+  }
   document.getElementById('privacy-modal-body').innerHTML=`
     <div class="modal-x" onclick="closeModal('privacy-modal')">✕</div>
     <div class="modal-title">🚫 Blocked Users</div>
