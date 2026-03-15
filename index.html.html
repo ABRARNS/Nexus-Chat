@@ -366,8 +366,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 .ctx-sep{height:1px;background:var(--border);margin:2px 0}
 
 /* ── PRIVACY MODAL ── */
-.privacy-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
-.privacy-row:last-child{border-bottom:none}
+
 .privacy-info{flex:1}
 .privacy-label{font-size:13.5px;font-weight:600;color:var(--t1);margin-bottom:2px}
 .privacy-desc{font-size:11.5px;color:var(--t4);font-family:var(--mono)}
@@ -377,7 +376,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 .toggle.on::after{transform:translateX(20px)}
 
 /* ── BLOCKED USERS LIST ── */
-.blocked-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r8);background:var(--card2);margin-bottom:8px}
+
 .blocked-av{width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 .blocked-av img{width:100%;height:100%;object-fit:cover;display:block}
 .unblock-btn{margin-left:auto;padding:6px 12px;border-radius:var(--r8);font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid rgba(0,232,122,.25);background:rgba(0,232,122,.08);color:var(--green);transition:all .15s;font-family:var(--font)}
@@ -696,7 +695,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="fl">Bio</div>
     <textarea class="fi" id="edit-bio" placeholder="Tell people about yourself…"></textarea>
     <button class="mbtn prim" onclick="saveProfile()">SAVE CHANGES</button>
-    <button class="mbtn sec" onclick="closeModal('profile-modal');openPrivacyModal()">🔒 Privacy & Blocked</button>
+    <button class="mbtn sec" onclick="closeModal('profile-modal');openBlockedList()">🚫 Blocked Users</button>
     <button class="mbtn danger" onclick="signOut()">🚪 Sign Out</button>
   </div>
 </div>
@@ -761,7 +760,6 @@ let onlineUsers=new Set(), typingTimers={};
 let allUsers=[], loadedMsgs=[], myLikedPosts=new Set();
 let notifs=[], emojiCat='😀', pendingImg=null, replyTo=null;
 let blockedUsers=new Set(); // IDs I have blocked
-let privacy={showOnline:true,showLastSeen:true,allowMsg:true};
 
 const EMOJIS={'😀':['😀','😂','🥹','😍','🤔','😎','🥳','🤩','😅','😭','😱','🫠','😤','🤯','😏'],'❤️':['❤️','🧡','💛','💚','💙','💜','🖤','💔','💕','💞','💖','💘','💝'],'🎉':['🎉','🎊','🎈','🏆','🥇','🎯','🔥','✨','⭐','🌟','💡','⚡','🚀'],'👍':['👍','👎','👏','🙌','🤝','🙏','✌️','🤞','🫶','💪','🫂','👋'],'🍕':['🍕','🍔','🌮','🍜','🍣','🍩','🎂','☕','🧃','🍺','🥂']};
 const RXNS=['❤️','🔥','😂','👍','✨','😮','😢'];
@@ -859,53 +857,47 @@ async function loadBlocks(){
 }
 
 async function blockUser(uid,username){
-  showToast('Block feature coming soon!');
+  const{error}=await sb.from('blocked_users').insert({blocker_id:ME.id,blocked_id:uid});
+  if(error&&error.code!=='23505'){showToast('❌ '+error.message);return;}
+  blockedUsers.add(uid);
+  showToast(`🚫 @${username} blocked`);
+  closeModal('user-modal');
+  loadConvos();
+  loadUsers();
 }
 
 async function unblockUser(uid,username){
-  showToast('Unblock feature coming soon!');
+  await sb.from('blocked_users').delete().eq('blocker_id',ME.id).eq('blocked_id',uid);
+  blockedUsers.delete(uid);
+  showToast(`✅ @${username} unblocked`);
+  loadConvos();
+  loadUsers();
+  // refresh blocked list if open, otherwise close user modal
+  const privModal=document.getElementById('privacy-modal');
+  if(privModal.classList.contains('on')) openBlockedList();
+  else closeModal('user-modal');
 }
 
-async function openPrivacyModal(){
-  const{data:blockData}=await sb.from('blocked_users').select('blocked_id,profiles(username,avatar_url)').eq('blocker_id',ME.id).catch(()=>({data:[]}));
-  const blocks=blockData||[];
-  const blockedList=(blocks||[]).map(b=>({id:b.blocked_id,...b.profiles}));
+async function openBlockedList(){
+  const{data:blockData}=await sb.from('blocked_users').select('blocked_id,profiles(username,avatar_url)').eq('blocker_id',ME.id);
+  const blocks=(blockData||[]).map(b=>({id:b.blocked_id,...(b.profiles||{})}));
   document.getElementById('privacy-modal-body').innerHTML=`
     <div class="modal-x" onclick="closeModal('privacy-modal')">✕</div>
-    <div class="modal-title">🔒 Privacy</div>
-    <div class="modal-sub">control your experience</div>
-
-    <div style="margin-bottom:20px">
-      <div class="privacy-row">
-        <div class="privacy-info"><div class="privacy-label">Show online status</div><div class="privacy-desc">Others can see when you're online</div></div>
-        <button class="toggle ${privacy.showOnline?'on':''}" id="tog-online" onclick="togglePrivacy('showOnline')"></button>
-      </div>
-      <div class="privacy-row">
-        <div class="privacy-info"><div class="privacy-label">Allow messages</div><div class="privacy-desc">Anyone on NEXUS can message you</div></div>
-        <button class="toggle ${privacy.allowMsg?'on':''}" id="tog-msg" onclick="togglePrivacy('allowMsg')"></button>
-      </div>
-    </div>
-
-    <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--t4);margin-bottom:10px;font-family:var(--mono)">Blocked Users (${blockedList.length})</div>
-    ${blockedList.length?blockedList.map(u=>`
-      <div class="blocked-row">
-        <div class="blocked-av" style="background:${uc(u.username||'?')}">${u.avatar_url?`<img src="${u.avatar_url}">`:`<span>${(u.username||'?')[0].toUpperCase()}</span>`}</div>
-        <div style="font-size:13.5px;font-weight:600">@${u.username||'?'}</div>
-        <button class="unblock-btn" onclick="unblockUser('${u.id}','${u.username||'?'}')">Unblock</button>
-      </div>`).join(''):'<div style="padding:14px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No blocked users</div>'}`;
+    <div class="modal-title">🚫 Blocked Users</div>
+    <div class="modal-sub">${blocks.length} blocked</div>
+    ${blocks.length?blocks.map(u=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);background:var(--card2);margin-bottom:8px">
+        <div style="width:38px;height:38px;border-radius:50%;background:${uc(u.username||'?')};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">
+          ${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:`<span>${(u.username||'?')[0].toUpperCase()}</span>`}
+        </div>
+        <div style="font-size:13.5px;font-weight:600;flex:1">@${u.username||'?'}</div>
+        <button onclick="unblockUser('${u.id}','${u.username||'?'}')" style="padding:6px 14px;border-radius:var(--r8);background:var(--cyan-dim);border:1px solid rgba(0,255,225,.2);color:var(--cyan);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Unblock</button>
+      </div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No blocked users</div>'}`;
   openModal('privacy-modal');
-}
-
-function togglePrivacy(key){
-  privacy[key]=!privacy[key];
-  const tog=document.getElementById('tog-'+key.replace('show','').replace('allow','').toLowerCase());
-  // re-render to update toggle state
-  openPrivacyModal();
 }
 
 // ── DELETE MESSAGE ──
 async function deleteMsg(msgId){
-  if(!confirm('Delete this message?'))return;
   const{error}=await sb.from('messages').delete().eq('id',msgId).eq('sender_id',ME.id);
   if(error){showToast('❌ '+error.message);return;}
   // remove from DOM
@@ -1588,6 +1580,8 @@ function renderRightPanel(p){
 
 // ── PROFILE VIEW ──
 async function viewProfile(uid){
+  // Refresh blocked list before showing profile
+  await loadBlocks();
   if(!uid)return;
   const[{data:p},{data:posts}]=await Promise.all([
     sb.from('profiles').select('*').eq('id',uid).single(),
