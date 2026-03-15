@@ -723,7 +723,14 @@ const RXNS=['❤️','🔥','😂','👍','✨','😮','😢'];
 
 // ── INIT ──
 async function init(){
-  if('Notification'in window&&Notification.permission==='default') Notification.requestPermission();
+  // Register service worker for real push notifications
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/Nexus-Chat/sw.js').catch(()=>{});
+  }
+  // Request notification permission
+  if('Notification'in window&&Notification.permission==='default'){
+    Notification.requestPermission();
+  }
   try{
     const{data:{session}}=await sb.auth.getSession();
     if(session?.user){await loadMe(session.user.id);showApp();}
@@ -945,8 +952,24 @@ function startGlobalSub(){
         const name=s?.username||'Someone';
         addNotif(s||{username:'Someone'},msg.content?.slice(0,50)||'📷 image');
         showToast(`💬 @${name}: ${(msg.content||'image').slice(0,28)}…`);
-        if(Notification.permission==='granted'&&document.hidden)
-          new Notification(`NEXUS — @${name}`,{body:msg.content||'Sent an image',tag:'nexus'});
+        if(Notification.permission==='granted'){
+          // Use service worker for reliable notifications (works even when app is closed)
+          if(navigator.serviceWorker?.controller){
+            navigator.serviceWorker.ready.then(reg=>{
+              reg.showNotification(`NEXUS — @${name}`,{
+                body:msg.content||'Sent an image',
+                icon:'/Nexus-Chat/icon-192.png',
+                badge:'/Nexus-Chat/icon-192.png',
+                tag:'nexus-msg',
+                renotify:true,
+                vibrate:[200,100,200]
+              });
+            });
+          } else if(document.hidden){
+            // Fallback for browsers without SW
+            new Notification(`NEXUS — @${name}`,{body:msg.content||'Sent an image',tag:'nexus'});
+          }
+        }
       }
     }).subscribe();
 }
