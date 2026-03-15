@@ -353,100 +353,114 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){.right-panel{display:none}}
-@media(max-width:750px){.convo-panel{width:240px}}
+@media(max-width:750px){.convo-panel{width:230px}}
 
-/* ── MOBILE ── */
-@media(max-width:600px){
-  /* hide desktop nav, show bottom bar */
-  .nav{display:none}
-  .right-panel{display:none}
+/* ── BACK BUTTON (mobile only) ── */
+.ch-back{display:none;width:34px;height:34px;border-radius:var(--r8);background:none;border:none;color:var(--t2);font-size:20px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;margin-right:2px}
 
-  /* full width convo panel slides over */
-  .convo-panel{
-    position:fixed;left:0;top:0;bottom:0;z-index:200;
-    width:88vw;max-width:320px;
-    transform:translateX(-110%);
-    transition:transform .28s cubic-bezier(.4,0,.2,1);
-    border-right:1px solid var(--border2);
-  }
-  .convo-panel.open{transform:translateX(0);box-shadow:8px 0 32px rgba(0,0,0,.6)}
-
-  /* dim overlay behind convo panel */
-  .convo-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;backdrop-filter:blur(2px)}
-  .convo-overlay.on{display:block}
-
-  /* chat area takes full screen */
-  .chat-area{width:100%;min-width:0}
-
-  /* topbar compact */
-  .top{padding:0 12px;gap:8px;height:52px}
-  .top-logo{font-size:16px;letter-spacing:4px}
-  .top-search{display:none}
-
-  /* chat header compact */
-  .chat-head{padding:0 12px;gap:8px;height:52px}
-  .ch-name{font-size:13.5px}
-
-  /* messages padding */
-  .msgs-wrap{padding:12px 12px}
-
-  /* bigger tap targets for bubbles */
-  .bubble{font-size:14px;padding:10px 13px}
-
-  /* input zone */
-  .input-zone{padding:8px 10px}
-  .input-row{gap:6px}
-  .it{width:36px;height:36px}
-  textarea.msg-txt{font-size:14px;padding:9px 12px}
-  .send-btn{width:42px;height:42px}
-
-  /* views */
-  .view{padding:16px 14px}
-  .view-hd{font-size:18px}
-  .people-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-  .pcard{padding:14px 10px}
-
-  /* feed composer */
-  .composer{padding:12px;gap:8px}
-  .post-card{padding:14px}
-
-  /* modals full screen on mobile */
-  .overlay{padding:0;align-items:flex-end}
-  .modal{border-radius:var(--r20) var(--r20) 0 0;width:100%;max-width:100%;max-height:92vh;padding:24px 20px}
-
-  /* auth card */
-  .auth-card{padding:32px 22px;border-radius:var(--r16)}
-
-  /* bottom nav bar */
-  #bottom-nav{display:flex}
-}
-
-/* Bottom nav — hidden on desktop */
+/* ── BOTTOM NAV ── */
 #bottom-nav{
-  display:none;
-  position:fixed;bottom:0;left:0;right:0;
-  background:rgba(10,10,18,.97);
-  border-top:1px solid var(--border);
-  backdrop-filter:blur(20px);
-  z-index:100;
-  padding:6px 0 calc(6px + env(safe-area-inset-bottom));
-  justify-content:space-around;
-  align-items:center;
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  background:rgba(10,10,18,.97);border-top:1px solid var(--border);
+  backdrop-filter:blur(20px);z-index:150;
+  padding:4px 0 calc(4px + env(safe-area-inset-bottom));
+  justify-content:space-around;align-items:center;
 }
 .bn-btn{
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:6px 20px;border-radius:var(--r12);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:8px 16px;border-radius:var(--r12);cursor:pointer;
   transition:all .15s;color:var(--t4);border:none;background:none;
-  min-width:56px;
+  flex:1;max-width:80px;
 }
 .bn-btn.on{color:var(--cyan)}
-.bn-icon{font-size:20px;line-height:1}
-.bn-lbl{font-size:9px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase}
+.bn-icon{font-size:22px;line-height:1}
+.bn-lbl{font-size:9px;font-family:var(--mono);letter-spacing:.3px;text-transform:uppercase;margin-top:1px}
 
-/* account for bottom nav height on mobile */
+/* ── MOBILE (≤600px) ── */
 @media(max-width:600px){
-  .body{padding-bottom:60px}
-  #app{padding-bottom:0}
+  /* Layout */
+  .nav{display:none}
+  .right-panel{display:none}
+  #bottom-nav{display:flex}
+  .body{padding-bottom:58px}
+
+  /* Topbar */
+  .top{padding:0 14px;gap:10px;height:54px}
+  .top-logo{font-size:17px;letter-spacing:4px}
+  .top-search{display:none}
+
+  /* Auth */
+  .auth-card{padding:28px 20px;border-radius:var(--r20) var(--r20) 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;border-left:none;border-right:none;border-bottom:none}
+  #auth{align-items:flex-end}
+
+  /* Modals as bottom sheets */
+  .overlay{padding:0;align-items:flex-end}
+  .modal{border-radius:var(--r20) var(--r20) 0 0;width:100%;max-width:100%;max-height:90vh;padding:24px 20px 32px}
+
+  /* Toast above bottom nav */
+  .toast{bottom:72px}
+
+  /* Notif panel */
+  .notif-panel{right:8px;left:8px;width:auto;top:58px}
+
+  /* Chat view — MOBILE STACK: show list OR chat, never both */
+  #view-chat{position:relative}
+
+  /* Convo panel = full screen by default in chat tab */
+  .convo-panel{
+    position:absolute;inset:0;width:100%;
+    transform:translateX(0);
+    border-right:none;
+    z-index:10;
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  /* When chat is open, slide convo list out left */
+  .convo-panel.chat-open{transform:translateX(-100%)}
+
+  /* Chat area = full screen, hidden behind convo list by default */
+  .chat-area{
+    position:absolute;inset:0;width:100%;
+    transform:translateX(100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+    z-index:11;
+    background:var(--bg);
+  }
+  /* When chat is open, slide chat in */
+  .chat-area.chat-open{transform:translateX(0)}
+
+  /* Show back button */
+  .ch-back{display:flex}
+
+  /* Chat head */
+  .chat-head{padding:0 10px;gap:8px;height:54px}
+  .ch-name{font-size:14px}
+
+  /* Messages */
+  .msgs-wrap{padding:10px 12px}
+  .bubble{font-size:14px;line-height:1.55}
+  .msg-col{max-width:80%}
+
+  /* Input */
+  .input-zone{padding:8px 10px 10px}
+  .input-row{gap:6px}
+  .it{width:38px;height:38px;font-size:17px}
+  textarea.msg-txt{font-size:15px;padding:9px 12px}
+  .send-btn{width:44px;height:44px;font-size:18px;border-radius:var(--r12)}
+
+  /* Views (People, Feed) */
+  .view{padding:16px 14px 20px}
+  .view-hd{font-size:20px}
+  .people-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .pcard{padding:16px 12px;gap:6px}
+  .pcard-av{width:54px;height:54px}
+  .pcard-name{font-size:13px}
+
+  /* Feed */
+  .composer{padding:12px;gap:8px}
+  .composer-av{width:36px;height:36px;font-size:14px}
+  .post-card{padding:14px}
+  .post-body{font-size:13.5px}
+  .pa{padding:7px 11px;font-size:12px}
 }
 </style>
 </head>
@@ -544,6 +558,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 
           <div id="active-chat" style="display:none;flex-direction:column;flex:1;overflow:hidden">
             <div class="chat-head">
+              <button class="ch-back" onclick="mobileBack()" title="Back">‹</button>
               <div class="ch-av" id="ch-av"><span id="ch-av-init"></span><img id="ch-av-img" src="" style="display:none"></div>
               <div class="ch-info">
                 <div class="ch-name" id="ch-name"></div>
@@ -667,16 +682,10 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 
 <div class="toast" id="toast"></div>
 
-<!-- MOBILE CONVO OVERLAY -->
-<div class="convo-overlay" id="convo-overlay" onclick="closeMobileConvos()"></div>
-
 <!-- BOTTOM NAV (mobile only) -->
 <nav id="bottom-nav">
   <button class="bn-btn on" id="bn-chat" onclick="setView('chat',document.getElementById('nav-chat'));bnActive('bn-chat')">
-    <span class="bn-icon">💬</span><span class="bn-lbl">chat</span>
-  </button>
-  <button class="bn-btn" id="bn-msgs" onclick="toggleMobileConvos()">
-    <span class="bn-icon">✉️</span><span class="bn-lbl">msgs</span>
+    <span class="bn-icon">💬</span><span class="bn-lbl">chats</span>
   </button>
   <button class="bn-btn" id="bn-people" onclick="setView('people',document.getElementById('nav-people'));bnActive('bn-people')">
     <span class="bn-icon">🌍</span><span class="bn-lbl">meet</span>
@@ -684,7 +693,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
   <button class="bn-btn" id="bn-feed" onclick="setView('feed',document.getElementById('nav-feed'));bnActive('bn-feed')">
     <span class="bn-icon">📰</span><span class="bn-lbl">feed</span>
   </button>
-  <button class="bn-btn" onclick="openModal('profile-modal')">
+  <button class="bn-btn" id="bn-me" onclick="openModal('profile-modal')">
     <span class="bn-icon">👤</span><span class="bn-lbl">me</span>
   </button>
 </nav>
@@ -995,7 +1004,7 @@ async function filterConvos(v){
 // ── OPEN CHAT ──
 async function openChat(uid){
   currentChat=uid;
-  closeMobileConvos();
+  mobileShowChat(); // slide to chat on mobile
   const{data:p}=await sb.from('profiles').select('*').eq('id',uid).single();
   currentProfile=p;
   const avImg=document.getElementById('ch-av-img'),avInit=document.getElementById('ch-av-init');
@@ -1443,17 +1452,18 @@ function setView(id,el){
   if(map[id])bnActive(map[id]);
 }
 
-function toggleMobileConvos(){
-  const panel=document.getElementById('convo-panel');
-  const overlay=document.getElementById('convo-overlay');
-  const isOpen=panel.classList.contains('open');
-  panel.classList.toggle('open',!isOpen);
-  overlay.classList.toggle('on',!isOpen);
+function mobileShowChat(){
+  // On mobile: slide convo list left, chat area right into view
+  document.getElementById('convo-panel').classList.add('chat-open');
+  document.getElementById('chat-area').classList.add('chat-open');
 }
-function closeMobileConvos(){
-  document.getElementById('convo-panel').classList.remove('open');
-  document.getElementById('convo-overlay').classList.remove('on');
+function mobileBack(){
+  // Back to convo list
+  document.getElementById('convo-panel').classList.remove('chat-open');
+  document.getElementById('chat-area').classList.remove('chat-open');
 }
+function toggleMobileConvos(){ /* no longer used */ }
+function closeMobileConvos(){ /* no longer used */ }
 function bnActive(id){
   document.querySelectorAll('.bn-btn').forEach(b=>b.classList.remove('on'));
   const el=document.getElementById(id);
