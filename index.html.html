@@ -985,7 +985,8 @@ function showCtxMenu(e,msgId,isMe){
 function closeCtxMenu(){document.getElementById('ctx-menu')?.remove();}
 
 async function signOut(){
-  if(presenceCh){await presenceCh.untrack();sb.removeChannel(presenceCh);}
+  if(heartbeatInterval){clearInterval(heartbeatInterval);heartbeatInterval=null;}
+  if(presenceCh){presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}});sb.removeChannel(presenceCh);}
   if(globalCh) sb.removeChannel(globalCh);
   if(chatChannel) sb.removeChannel(chatChannel);
   await sb.auth.signOut();
@@ -1077,17 +1078,52 @@ function clearAttach(){
 }
 
 // ── PRESENCE ──
+let heartbeatInterval=null;
+let onlineTimestamps={}; // uid -> last seen ms
+
 function startPresence(){
-  presenceCh=sb.channel('nexus-presence',{config:{presence:{key:ME.id}}});
-  presenceCh
-    .on('presence',{event:'sync'},()=>{
-      const s=presenceCh.presenceState();
-      onlineUsers=new Set(Object.keys(s));
-      updateOnlineUI();
-    })
-    .on('presence',{event:'join'},({key})=>{onlineUsers.add(key);updateOnlineUI();})
-    .on('presence',{event:'leave'},({key})=>{onlineUsers.delete(key);updateOnlineUI();})
-    .subscribe(async s=>{if(s==='SUBSCRIBED')await presenceCh.track({user_id:ME.id});});
+  presenceCh=sb.channel('nexus-online');
+
+  // Listen for heartbeats from other users
+  presenceCh.on('broadcast',{event:'heartbeat'},({payload})=>{
+    if(!payload?.uid||payload.uid===ME.id)return;
+    onlineTimestamps[payload.uid]=Date.now();
+    onlineUsers.add(payload.uid);
+    updateOnlineUI();
+  });
+
+  // Listen for bye signals
+  presenceCh.on('broadcast',{event:'bye'},({payload})=>{
+    if(!payload?.uid)return;
+    onlineUsers.delete(payload.uid);
+    delete onlineTimestamps[payload.uid];
+    updateOnlineUI();
+  });
+
+  presenceCh.subscribe(status=>{
+    if(status==='SUBSCRIBED'){
+      // Announce myself immediately
+      presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
+      // Keep sending heartbeat every 20 seconds
+      heartbeatInterval=setInterval(()=>{
+        presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
+        // Clean up users not seen in 45 seconds
+        const cutoff=Date.now()-45000;
+        Object.keys(onlineTimestamps).forEach(uid=>{
+          if(onlineTimestamps[uid]<cutoff){
+            onlineUsers.delete(uid);
+            delete onlineTimestamps[uid];
+          }
+        });
+        updateOnlineUI();
+      },20000);
+    }
+  });
+
+  // Send bye when tab closes
+  window.addEventListener('beforeunload',()=>{
+    presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}});
+  });
 }
 
 function updateOnlineUI(){
