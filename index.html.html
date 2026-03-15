@@ -358,6 +358,34 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 /* ── BACK BUTTON (mobile only) ── */
 .ch-back{display:none;width:34px;height:34px;border-radius:var(--r8);background:none;border:none;color:var(--t2);font-size:20px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;margin-right:2px}
 
+/* ── MSG CONTEXT MENU ── */
+.ctx-menu{position:fixed;background:var(--card2);border:1px solid var(--border2);border-radius:var(--r12);z-index:500;overflow:hidden;box-shadow:var(--shadow-lg);min-width:160px}
+.ctx-item{padding:11px 16px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .12s;color:var(--t1)}
+.ctx-item:hover{background:var(--card3)}
+.ctx-item.danger{color:var(--pink)}
+.ctx-sep{height:1px;background:var(--border);margin:2px 0}
+
+/* ── PRIVACY MODAL ── */
+.privacy-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.privacy-row:last-child{border-bottom:none}
+.privacy-info{flex:1}
+.privacy-label{font-size:13.5px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.privacy-desc{font-size:11.5px;color:var(--t4);font-family:var(--mono)}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--card3);border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--cyan)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle.on::after{transform:translateX(20px)}
+
+/* ── BLOCKED USERS LIST ── */
+.blocked-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r8);background:var(--card2);margin-bottom:8px}
+.blocked-av{width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.blocked-av img{width:100%;height:100%;object-fit:cover;display:block}
+.unblock-btn{margin-left:auto;padding:6px 12px;border-radius:var(--r8);font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid rgba(0,232,122,.25);background:rgba(0,232,122,.08);color:var(--green);transition:all .15s;font-family:var(--font)}
+.unblock-btn:hover{background:rgba(0,232,122,.18)}
+
+/* ── FORWARD INDICATOR ── */
+.fwd-label{font-size:10px;color:var(--t4);font-family:var(--mono);margin-bottom:3px;display:flex;align-items:center;gap:4px}
+
 /* ── BOTTOM NAV ── */
 #bottom-nav{
   display:none;position:fixed;bottom:0;left:0;right:0;
@@ -668,7 +696,22 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="fl">Bio</div>
     <textarea class="fi" id="edit-bio" placeholder="Tell people about yourself…"></textarea>
     <button class="mbtn prim" onclick="saveProfile()">SAVE CHANGES</button>
+    <button class="mbtn sec" onclick="closeModal('profile-modal');openPrivacyModal()">🔒 Privacy & Blocked</button>
     <button class="mbtn danger" onclick="signOut()">🚪 Sign Out</button>
+  </div>
+</div>
+
+<!-- PRIVACY MODAL -->
+<div class="overlay" id="privacy-modal" onclick="closeBg(event,'privacy-modal')">
+  <div class="modal" id="privacy-modal-body">
+    <div class="modal-x" onclick="closeModal('privacy-modal')">✕</div>
+  </div>
+</div>
+
+<!-- FORWARD MODAL -->
+<div class="overlay" id="forward-modal" onclick="closeBg(event,'forward-modal')">
+  <div class="modal" id="forward-modal-body" style="max-height:80vh;overflow-y:auto">
+    <div class="modal-x" onclick="closeModal('forward-modal')">✕</div>
   </div>
 </div>
 
@@ -717,6 +760,8 @@ let chatChannel=null, presenceCh=null, globalCh=null;
 let onlineUsers=new Set(), typingTimers={};
 let allUsers=[], loadedMsgs=[], myLikedPosts=new Set();
 let notifs=[], emojiCat='😀', pendingImg=null, replyTo=null;
+let blockedUsers=new Set(); // IDs I have blocked
+let privacy={showOnline:true,showLastSeen:true,allowMsg:true};
 
 const EMOJIS={'😀':['😀','😂','🥹','😍','🤔','😎','🥳','🤩','😅','😭','😱','🫠','😤','🤯','😏'],'❤️':['❤️','🧡','💛','💚','💙','💜','🖤','💔','💕','💞','💖','💘','💝'],'🎉':['🎉','🎊','🎈','🏆','🥇','🎯','🔥','✨','⭐','🌟','💡','⚡','🚀'],'👍':['👍','👎','👏','🙌','🤝','🙏','✌️','🤞','🫶','💪','🫂','👋'],'🍕':['🍕','🍔','🌮','🍜','🍣','🍩','🎂','☕','🧃','🍺','🥂']};
 const RXNS=['❤️','🔥','😂','👍','✨','😮','😢'];
@@ -743,11 +788,12 @@ async function loadMe(uid){
   ME=data||{id:uid,username:'user',bio:'',avatar_url:''};
 }
 
-function showApp(){
+async function showApp(){
   document.getElementById('loading').classList.add('hide');
   document.getElementById('auth').style.display='none';
   document.getElementById('app').classList.add('on');
   renderMyAv();
+  await loadBlocks();
   loadConvos();
   loadFeed();
   loadUsers();
@@ -803,6 +849,140 @@ async function doSignup(){
 }
 
 function showErr(m){const e=document.getElementById('auth-err');e.textContent=m;e.classList.add('show');}
+
+// ── BLOCK / PRIVACY ──
+async function loadBlocks(){
+  const{data}=await sb.from('blocked_users').select('blocked_id').eq('blocker_id',ME.id);
+  blockedUsers=new Set((data||[]).map(b=>b.blocked_id));
+}
+
+async function blockUser(uid,username){
+  if(!confirm(`Block @${username}? They won't be able to message you.`))return;
+  const{error}=await sb.from('blocked_users').insert({blocker_id:ME.id,blocked_id:uid});
+  if(error&&error.code!=='23505'){showToast('❌ '+error.message);return;}
+  blockedUsers.add(uid);
+  showToast(`🚫 @${username} blocked`);
+  closeModal('user-modal');
+  loadUsers();
+}
+
+async function unblockUser(uid,username){
+  await sb.from('blocked_users').delete().eq('blocker_id',ME.id).eq('blocked_id',uid);
+  blockedUsers.delete(uid);
+  showToast(`✅ @${username} unblocked`);
+  openPrivacyModal(); // refresh list
+}
+
+async function openPrivacyModal(){
+  // load blocked users with profiles
+  const{data:blocks}=await sb.from('blocked_users').select('blocked_id,profiles(username,avatar_url)').eq('blocker_id',ME.id);
+  const blockedList=(blocks||[]).map(b=>({id:b.blocked_id,...b.profiles}));
+  document.getElementById('privacy-modal-body').innerHTML=`
+    <div class="modal-x" onclick="closeModal('privacy-modal')">✕</div>
+    <div class="modal-title">🔒 Privacy</div>
+    <div class="modal-sub">control your experience</div>
+
+    <div style="margin-bottom:20px">
+      <div class="privacy-row">
+        <div class="privacy-info"><div class="privacy-label">Show online status</div><div class="privacy-desc">Others can see when you're online</div></div>
+        <button class="toggle ${privacy.showOnline?'on':''}" id="tog-online" onclick="togglePrivacy('showOnline')"></button>
+      </div>
+      <div class="privacy-row">
+        <div class="privacy-info"><div class="privacy-label">Allow messages</div><div class="privacy-desc">Anyone on NEXUS can message you</div></div>
+        <button class="toggle ${privacy.allowMsg?'on':''}" id="tog-msg" onclick="togglePrivacy('allowMsg')"></button>
+      </div>
+    </div>
+
+    <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--t4);margin-bottom:10px;font-family:var(--mono)">Blocked Users (${blockedList.length})</div>
+    ${blockedList.length?blockedList.map(u=>`
+      <div class="blocked-row">
+        <div class="blocked-av" style="background:${uc(u.username||'?')}">${u.avatar_url?`<img src="${u.avatar_url}">`:`<span>${(u.username||'?')[0].toUpperCase()}</span>`}</div>
+        <div style="font-size:13.5px;font-weight:600">@${u.username||'?'}</div>
+        <button class="unblock-btn" onclick="unblockUser('${u.id}','${u.username||'?'}')">Unblock</button>
+      </div>`).join(''):'<div style="padding:14px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No blocked users</div>'}`;
+  openModal('privacy-modal');
+}
+
+function togglePrivacy(key){
+  privacy[key]=!privacy[key];
+  const tog=document.getElementById('tog-'+key.replace('show','').replace('allow','').toLowerCase());
+  // re-render to update toggle state
+  openPrivacyModal();
+}
+
+// ── DELETE MESSAGE ──
+async function deleteMsg(msgId){
+  if(!confirm('Delete this message?'))return;
+  const{error}=await sb.from('messages').delete().eq('id',msgId).eq('sender_id',ME.id);
+  if(error){showToast('❌ '+error.message);return;}
+  // remove from DOM
+  const el=document.querySelector(`[data-id="${msgId}"]`);
+  if(el)el.remove();
+  // remove from cache
+  loadedMsgs=loadedMsgs.filter(m=>m.id!==msgId);
+  showToast('🗑 Message deleted');
+  // broadcast delete so other side removes it too
+  if(chatChannel) chatChannel.send({type:'broadcast',event:'del',payload:{id:msgId}});
+}
+
+// ── FORWARD MESSAGE ──
+let forwardContent=null;
+async function forwardMsg(msgId){
+  const msg=loadedMsgs.find(m=>m.id===msgId);
+  if(!msg)return;
+  forwardContent={content:msg.content,media_url:msg.media_url,media_type:msg.media_type};
+  closeCtxMenu();
+  // show forward modal
+  const{data}=await sb.from('profiles').select('*').neq('id',ME.id).limit(40);
+  const list=allUsers.length?allUsers:data||[];
+  document.getElementById('forward-modal-body').innerHTML=`
+    <div class="modal-x" onclick="closeModal('forward-modal')">✕</div>
+    <div class="modal-title">↪ Forward Message</div>
+    <div class="modal-sub">choose who to send to</div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r8);padding:10px 12px;margin-bottom:16px;font-size:13px;color:var(--t2);font-style:italic;max-height:60px;overflow:hidden;text-overflow:ellipsis">${esc(msg.content||'📷 Image')}</div>
+    ${list.map(u=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);cursor:pointer;transition:background .15s" onclick="doForward('${u.id}')" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''">
+        <div style="width:38px;height:38px;border-radius:50%;background:${uc(u.username)};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:u.username[0].toUpperCase()}</div>
+        <div style="font-size:13.5px;font-weight:600">@${u.username}</div>
+        <span style="margin-left:auto;font-size:11px;color:var(--cyan);font-family:var(--mono)">SEND →</span>
+      </div>`).join('')}`;
+  openModal('forward-modal');
+}
+
+async function doForward(toUid){
+  if(!forwardContent)return;
+  const{error}=await sb.from('messages').insert({
+    sender_id:ME.id,receiver_id:toUid,
+    content:forwardContent.content?`↪ ${forwardContent.content}`:null,
+    media_url:forwardContent.media_url,media_type:forwardContent.media_type
+  });
+  if(error){showToast('❌ '+error.message);return;}
+  forwardContent=null;
+  closeModal('forward-modal');
+  showToast('↪ Message forwarded!');
+}
+
+// ── CONTEXT MENU ──
+function showCtxMenu(e,msgId,isMe){
+  closeCtxMenu();
+  const menu=document.createElement('div');
+  menu.className='ctx-menu';
+  menu.id='ctx-menu';
+  const items=[
+    {icon:'↩',label:'Reply',fn:`startReply('${msgId}','${escAttr(loadedMsgs.find(m=>m.id===msgId)?.content||'')}')` },
+    {icon:'↪',label:'Forward',fn:`forwardMsg('${msgId}')` },
+    ...(isMe?[{icon:'🗑',label:'Delete',fn:`deleteMsg('${msgId}')`,danger:true}]:[])
+  ];
+  menu.innerHTML=items.map(i=>`<div class="ctx-item ${i.danger?'danger':''}" onclick="${i.fn};closeCtxMenu()">${i.icon} ${i.label}</div>`).join('');
+  // position
+  const x=Math.min(e.clientX,window.innerWidth-180);
+  const y=Math.min(e.clientY,window.innerHeight-items.length*44);
+  menu.style.left=x+'px';menu.style.top=y+'px';
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
+}
+
+function closeCtxMenu(){document.getElementById('ctx-menu')?.remove();}
 
 async function signOut(){
   if(presenceCh){await presenceCh.untrack();sb.removeChannel(presenceCh);}
@@ -965,8 +1145,8 @@ function startGlobalSub(){
                 vibrate:[200,100,200]
               });
             });
-          } else if(document.hidden){
-            // Fallback for browsers without SW
+          } else {
+            // Fallback — always show, not just when hidden
             new Notification(`NEXUS — @${name}`,{body:msg.content||'Sent an image',tag:'nexus'});
           }
         }
@@ -996,7 +1176,8 @@ async function loadConvos(){
     const tb=lastMsgsCache[b.id]?.created_at||'';
     return tb>ta?1:-1;
   });
-  renderConvos(sorted);
+  // Filter out blocked users
+  renderConvos(sorted.filter(p=>!blockedUsers.has(p.id)));
 }
 
 function renderConvos(profiles,filter=''){
@@ -1085,8 +1266,14 @@ function subscribeToBroadcast(uid){
 
   // Listen for read receipts
   chatChannel.on('broadcast',{event:'read'},()=>{
-    // update tick marks on sent messages
     document.querySelectorAll('.msg-tick').forEach(t=>t.classList.add('read'));
+  });
+
+  // Listen for message deletes
+  chatChannel.on('broadcast',{event:'del'},({payload})=>{
+    const el=document.querySelector(`[data-id="${payload.id}"]`);
+    if(el)el.remove();
+    loadedMsgs=loadedMsgs.filter(m=>m.id!==payload.id);
   });
 
   chatChannel.subscribe();
@@ -1096,6 +1283,16 @@ function broadcastTyping(isTyping){
   if(!chatChannel||!currentChat)return;
   chatChannel.send({type:'broadcast',event:'typing',payload:{uid:ME.id,typing:isTyping}});
 }
+
+// Long press for mobile context menu
+let longPressTimer=null;
+function startLongPress(e,msgId,isMe){
+  longPressTimer=setTimeout(()=>{
+    const touch=e.touches[0];
+    showCtxMenu({clientX:touch.clientX,clientY:touch.clientY},msgId,isMe);
+  },500);
+}
+function clearLongPress(){clearTimeout(longPressTimer);}
 
 function showTyping(isTyping){
   const line=document.getElementById('typing-line');
@@ -1171,15 +1368,23 @@ function makeBubble(msg,isFirst){
   div.className=`msg-row ${isMe?'me':''} ${isFirst?'first':'stack'}`;
   div.dataset.sender=msg.sender_id;
   div.dataset.id=msg.id;
+  const isFwd=msg.content&&msg.content.startsWith('↪ ');
   div.innerHTML=`
     ${isFirst?`<div class="msg-av ${isMe?'hide':''}">${avHtml}</div>`:`<div class="msg-av hide"></div>`}
     <div class="msg-col">
       ${isFirst&&!isMe?`<div class="msg-sender">@${uname}</div>`:''}
-      <div class="bubble ${isMe?'me':'them'} ${hasImg?'img-only':''}" id="bub-${msg.id}">
+      ${isFwd?`<div class="fwd-label">↪ forwarded</div>`:''}
+      <div class="bubble ${isMe?'me':'them'} ${hasImg?'img-only':''}" id="bub-${msg.id}"
+        oncontextmenu="showCtxMenu(event,'${msg.id}',${isMe});event.preventDefault()"
+        ontouchstart="startLongPress(event,'${msg.id}',${isMe})"
+        ontouchend="clearLongPress()"
+        ontouchmove="clearLongPress()">
         ${content}
         <div class="msg-actions">
           ${RXNS.map(r=>`<button class="ma" onclick="addRxn('${msg.id}','${r}')">${r}</button>`).join('')}
           <button class="ma" onclick="startReply('${msg.id}','${escAttr(msg.content||'')}')">↩</button>
+          <button class="ma" onclick="forwardMsg('${msg.id}')">↪</button>
+          ${isMe?`<button class="ma" style="color:var(--pink)" onclick="deleteMsg('${msg.id}')">🗑</button>`:''}
         </div>
       </div>
       <div class="msg-meta"><span class="msg-time">${t}</span>${ticks}</div>
@@ -1296,7 +1501,7 @@ function insertEmoji(e){const i=document.getElementById('msg-input');i.value+=e;
 // ── ALL USERS ──
 async function loadUsers(){
   const{data}=await sb.from('profiles').select('*').neq('id',ME.id).limit(60);
-  allUsers=data||[];renderPeople(allUsers);
+  allUsers=(data||[]).filter(u=>!blockedUsers.has(u.id));renderPeople(allUsers);
 }
 
 function renderPeople(users){
@@ -1375,7 +1580,12 @@ async function viewProfile(uid){
       <div style="background:var(--card2);border-radius:var(--r12);padding:14px;text-align:center"><div style="font-size:22px;font-weight:800">${posts?.length||0}</div><div style="font-size:9px;color:var(--t4);font-family:var(--mono);letter-spacing:.5px">POSTS</div></div>
       <div style="background:var(--card2);border-radius:var(--r12);padding:14px;text-align:center"><div style="font-size:16px;font-weight:700">${new Date(p.created_at||Date.now()).toLocaleDateString('en',{month:'short',year:'numeric'})}</div><div style="font-size:9px;color:var(--t4);font-family:var(--mono);letter-spacing:.5px">JOINED</div></div>
     </div>
-    ${uid!==ME.id?`<button onclick="chatWith('${uid}');closeModal('user-modal')" class="mbtn prim">💬 SEND MESSAGE</button>`:''}`;
+    ${uid!==ME.id?`
+      <button onclick="chatWith('${uid}');closeModal('user-modal')" class="mbtn prim">💬 SEND MESSAGE</button>
+      ${blockedUsers.has(uid)
+        ?`<button onclick="unblockUser('${uid}','${p.username}')" class="mbtn sec" style="color:var(--green);border-color:rgba(0,232,122,.2)">✅ Unblock @${p.username}</button>`
+        :`<button onclick="blockUser('${uid}','${p.username}')" class="mbtn sec" style="color:var(--pink);border-color:rgba(255,45,120,.2)">🚫 Block @${p.username}</button>`
+      }`:''}`;
   openModal('user-modal');
 }
 
