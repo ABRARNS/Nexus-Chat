@@ -610,6 +610,10 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
       <div class="view" id="view-people">
         <div class="view-hd">🌍 Meet People</div>
         <div class="view-sub">// real users on nexus</div>
+        <div style="position:relative;margin-bottom:18px">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t4);font-size:14px;pointer-events:none">⌕</span>
+          <input oninput="searchUsers(this.value)" placeholder="Search by username…" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r12);padding:10px 14px 10px 36px;font-size:13.5px;color:var(--t1);font-family:var(--font);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='rgba(0,255,225,.3)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
         <div class="people-grid" id="people-grid"></div>
       </div>
 
@@ -617,6 +621,10 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
       <div class="view" id="view-feed">
         <div class="view-hd">📰 Feed</div>
         <div class="view-sub">// posts from everyone</div>
+        <div style="position:relative;margin-bottom:16px">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t4);font-size:14px;pointer-events:none">⌕</span>
+          <input id="feed-search" oninput="searchFeed(this.value)" placeholder="Search posts or users…" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r12);padding:10px 14px 10px 36px;font-size:13.5px;color:var(--t1);font-family:var(--font);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='rgba(0,255,225,.3)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
         <div class="composer">
           <div class="composer-av" id="feed-av"></div>
           <div class="composer-right">
@@ -1315,7 +1323,7 @@ function renderRightPanel(p){
     <div style="text-align:center;margin-bottom:16px">
       <div class="rp-av" style="background:${uc(p.username)}">${p.avatar_url?`<img src="${p.avatar_url}">`:`<span>${p.username[0].toUpperCase()}</span>`}</div>
       <div class="rp-name">@${p.username}</div>
-      <div class="rp-status" id="rp-status" style="color:${on?'var(--green)':'var(--t4)'};font-size:11px;font-family:var(--mono)">${on?'● Online':'○ Offline'}</div>
+      <div id="rp-status" style="font-size:11px;font-family:var(--mono);text-align:center;margin-bottom:6px;color:${on?'var(--green)':'var(--t4)'}">${on?'● Online':'○ Offline'}</div>
       <div class="rp-bio">${p.bio||'No bio yet.'}</div>
     </div>
     <button class="rp-btn cyan" onclick="viewProfile('${p.id}')">◎ View Profile</button>`;
@@ -1349,13 +1357,26 @@ async function viewProfile(uid){
 }
 
 // ── FEED ──
+let allPosts=[];
+
 async function loadFeed(){
   const[{data:posts},{data:likes}]=await Promise.all([
-    sb.from('posts').select('*,profiles(username,avatar_url)').order('created_at',{ascending:false}).limit(30),
+    sb.from('posts').select('*,profiles(username,avatar_url)').order('created_at',{ascending:false}).limit(50),
     sb.from('post_likes').select('post_id').eq('user_id',ME.id)
   ]);
   myLikedPosts=new Set((likes||[]).map(l=>l.post_id));
-  renderFeed(posts||[]);
+  allPosts=posts||[];
+  renderFeed(allPosts);
+}
+
+function searchFeed(q){
+  if(!q.trim()){renderFeed(allPosts);return;}
+  const s=q.toLowerCase();
+  renderFeed(allPosts.filter(p=>{
+    const uname=(p.profiles?.username||'').toLowerCase();
+    const body=(p.content||'').toLowerCase();
+    return uname.includes(s)||body.includes(s);
+  }));
 }
 
 function renderFeed(posts){
@@ -1374,7 +1395,7 @@ function renderFeed(posts){
         </div>
         ${post.user_id!==ME.id?`<button class="post-msg-btn" onclick="chatWith('${post.user_id}')">Message</button>`:''}
       </div>
-      <div class="post-body">${esc(post.content)}</div>
+      ${post.content?`<div class="post-body">${esc(post.content)}</div>`:''}
       <div class="post-actions">
         <button class="pa ${liked?'liked':''}" onclick="likePost('${post.id}',this)" ${liked?'disabled':''}>
           ${liked?'❤️':'♡'} ${post.likes||0}
@@ -1391,7 +1412,10 @@ async function createPost(){
   const text=ta.value.trim();if(!text)return;
   const{error}=await sb.from('posts').insert({user_id:ME.id,content:text});
   if(error){showToast('❌ '+error.message);return;}
-  ta.value='';showToast('📡 Posted!');loadFeed();
+  ta.value='';
+  const fs=document.getElementById('feed-search');
+  if(fs)fs.value='';
+  showToast('📡 Posted!');loadFeed();
 }
 
 async function likePost(id,btn){
@@ -1446,7 +1470,11 @@ function setView(id,el){
   document.getElementById('view-people').classList.toggle('on',id==='people');
   document.getElementById('view-feed').classList.toggle('on',id==='feed');
   if(id==='people')loadUsers();
-  if(id==='feed')loadFeed();
+  if(id==='feed'){
+    const fs=document.getElementById('feed-search');
+    if(fs)fs.value='';
+    loadFeed();
+  }
   // sync bottom nav
   const map={chat:'bn-chat',people:'bn-people',feed:'bn-feed'};
   if(map[id])bnActive(map[id]);
@@ -1493,7 +1521,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 document.addEventListener('click',e=>{
   if(!e.target.closest('.emoji-picker')&&!e.target.closest('.it'))document.getElementById('emoji-picker').classList.remove('on');
   if(!e.target.closest('.notif-panel')&&!e.target.closest('#notif-btn'))document.getElementById('notif-panel').classList.remove('on');
-  if(!e.target.closest('#convo-panel')&&!e.target.closest('.top-logo'))closeMobileConvos();
+  // no mobile convo close needed — handled by back button
 });
 
 setTimeout(()=>{if(!document.getElementById('loading').classList.contains('hide'))showAuth();},5000);
