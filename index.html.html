@@ -1578,20 +1578,7 @@ async function loadGroups(){
 
   const{data:groups}=await sb.from('group_chats').select('*').in('id',allGids);
 
-  allGroups=(groups||[]).map(g=>{
-    const roleFromDB=roleMap[g.id];
-    let role;
-    if(roleFromDB){
-      // Always trust what's in group_members — it's the source of truth
-      role=roleFromDB;
-    } else if(g.created_by===ME.id){
-      // No membership row at all — must be the original creator before RPC existed
-      role='owner';
-    } else {
-      role='member';
-    }
-    return{...g,_myRole:role};
-  });
+  allGroups=(groups||[]).map(g=>({...g,_myRole:roleMap[g.id]||'member'}));
 
   renderGroupList(allGroups);
 }
@@ -1634,7 +1621,7 @@ async function openGroupChat(groupId){
 
   // If I'm the creator and not in group_members, add role as owner in cache
   groupMembersCache={};
-  groupMembersCache[ME.id]={...ME,role:group.created_by===ME.id?'owner':currentGroupRole};
+  groupMembersCache[ME.id]={...ME,role:currentGroupRole};
 
   if(allMemberIds.length){
     const{data:profs}=await sb.from('profiles').select('*').in('id',allMemberIds);
@@ -1645,12 +1632,12 @@ async function openGroupChat(groupId){
     });
   }
 
-  // Set my actual role — trust _myRole from allGroups (loaded from DB)
+  // Role comes ONLY from group_members table — single source of truth
   const myMembership=(members||[]).find(m=>m.user_id===ME.id);
-  if(group.created_by===ME.id)currentGroupRole='owner';
-  else if(myMembership?.role)currentGroupRole=myMembership.role;
-  else currentGroupRole=group._myRole||'member';
+  currentGroupRole=myMembership?.role||group._myRole||'member';
 
+  // Update my role in cache with actual membership role
+  if(groupMembersCache[ME.id])groupMembersCache[ME.id].role=currentGroupRole;
   groupMembers=Object.values(groupMembersCache);
   document.getElementById('gch-status').textContent=`${groupMembers.length} members`;
 
