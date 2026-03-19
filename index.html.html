@@ -1701,12 +1701,20 @@ function showMemberMenu(e,uid,username,role){
 }
 
 async function setMemberRole(uid,username,role){
-  const{error}=await sb.from('group_members').update({role}).eq('group_id',currentGroup).eq('user_id',uid);
+  // upsert so it works even if the row doesn't exist yet
+  const{error}=await sb.from('group_members').upsert(
+    {group_id:currentGroup,user_id:uid,role},
+    {onConflict:'group_id,user_id'}
+  );
   if(error){showToast('❌ '+error.message);return;}
+  // verify it saved
+  const{data:check}=await sb.from('group_members').select('role').eq('group_id',currentGroup).eq('user_id',uid).single();
+  if(check?.role!==role){showToast('❌ Role update failed silently');return;}
   if(groupMembersCache[uid])groupMembersCache[uid].role=role;
   groupMembers=Object.values(groupMembersCache);
   showToast(`✅ @${username} is now ${role}`);
   renderGroupRightPanel();
+  openGroupInfo(); // refresh info modal if open
 }
 
 async function transferOwnership(uid,username){
