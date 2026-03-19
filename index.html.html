@@ -1579,10 +1579,18 @@ async function loadGroups(){
   const{data:groups}=await sb.from('group_chats').select('*').in('id',allGids);
 
   allGroups=(groups||[]).map(g=>{
-    let role=roleMap[g.id];
-    // If I created it and have no membership role, I'm owner
-    if(!role&&g.created_by===ME.id)role='owner';
-    return{...g,_myRole:role||'member'};
+    const roleFromDB=roleMap[g.id];
+    let role;
+    if(roleFromDB){
+      // Always trust what's in group_members — it's the source of truth
+      role=roleFromDB;
+    } else if(g.created_by===ME.id){
+      // No membership row at all — must be the original creator before RPC existed
+      role='owner';
+    } else {
+      role='member';
+    }
+    return{...g,_myRole:role};
   });
 
   renderGroupList(allGroups);
@@ -1718,12 +1726,19 @@ async function setMemberRole(uid,username,role){
 }
 
 async function transferOwnership(uid,username){
-  // Make target the owner, demote self to admin
-  const{error}=await sb.from('group_members').update({role:'owner'}).eq('group_id',currentGroup).eq('user_id',uid);
-  if(error){showToast('❌ '+error.message);return;}
-  // Demote current owner to admin
-  await sb.from('group_members').update({role:'admin'}).eq('group_id',currentGroup).eq('user_id',ME.id);
-  // Update group created_by
+  // Upsert new owner row
+  const{error:e1}=await sb.from('group_members').upsert(
+    {group_id:currentGroup,user_id:uid,role:'owner'},
+    {onConflict:'group_id,user_id'}
+  );
+  if(e1){showToast('❌ '+e1.message);return;}
+  // Demote old owner to admin
+  const{error:e2}=await sb.from('group_members').upsert(
+    {group_id:currentGroup,user_id:ME.id,role:'admin'},
+    {onConflict:'group_id,user_id'}
+  );
+  if(e2){showToast('❌ '+e2.message);return;}
+  // Update group created_by so loadGroups role logic also reflects new owner
   await sb.from('group_chats').update({created_by:uid}).eq('id',currentGroup);
   // Update local cache
   if(groupMembersCache[uid])groupMembersCache[uid].role='owner';
