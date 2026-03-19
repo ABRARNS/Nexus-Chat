@@ -425,10 +425,16 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
   .overlay{padding:0;align-items:flex-end}.modal{border-radius:var(--r20) var(--r20) 0 0;width:100%;max-width:100%;max-height:90vh;padding:24px 20px 32px}
   .toast{bottom:72px}.notif-panel{right:8px;left:8px;width:auto;top:58px}
   #view-chat{position:relative}
+  #view-groups{position:relative}
   .convo-panel{position:absolute;inset:0;width:100%;transform:translateX(0);border-right:none;z-index:10;transition:transform .28s cubic-bezier(.4,0,.2,1)}
   .convo-panel.chat-open{transform:translateX(-100%)}
   .chat-area{position:absolute;inset:0;width:100%;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:11;background:var(--bg)}
   .chat-area.chat-open{transform:translateX(0)}
+  /* group panel same behaviour */
+  #group-panel{position:absolute;inset:0;width:100%;transform:translateX(0);border-right:none;z-index:10;transition:transform .28s cubic-bezier(.4,0,.2,1)}
+  #group-panel.chat-open{transform:translateX(-100%)}
+  #group-chat-area{position:absolute;inset:0;width:100%;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:11;background:var(--bg)}
+  #group-chat-area.chat-open{transform:translateX(0)}
   .ch-back{display:flex}.chat-head{padding:0 10px;gap:8px;height:54px}
   .msgs-wrap{padding:10px 12px}.bubble{font-size:14px}.msg-col{max-width:80%}
   .input-zone{padding:8px 10px 10px}.it{width:38px;height:38px;font-size:17px}
@@ -1555,23 +1561,30 @@ function resizeInput(el){el.style.height='auto';el.style.height=Math.min(el.scro
 
 // ── GROUPS ──
 async function loadGroups(){
-  const{data:created}=await sb.from('group_chats').select('*').eq('created_by',ME.id);
+  // Load all groups I'm a member of (includes role)
   const{data:memberships}=await sb.from('group_members').select('group_id,role').eq('user_id',ME.id);
-  let joined=[];
-  if(memberships?.length){
-    const gids=memberships.map(m=>m.group_id);
-    const{data:g}=await sb.from('group_chats').select('*').in('id',gids);
-    joined=g||[];
-    // store my roles
-    memberships.forEach(m=>{
-      const grp=joined.find(g=>g.id===m.group_id);
-      if(grp)grp._myRole=m.role;
-    });
-  }
-  // merge, deduplicate, mark created as owner
-  const all=[...(created||[]).map(g=>({...g,_myRole:'owner'})),...joined];
-  const seen=new Set();
-  allGroups=all.filter(g=>{if(seen.has(g.id))return false;seen.add(g.id);return true;});
+  // Load groups I created (in case I'm not in group_members yet)
+  const{data:created}=await sb.from('group_chats').select('*').eq('created_by',ME.id);
+
+  const roleMap={};
+  (memberships||[]).forEach(m=>roleMap[m.group_id]=m.role);
+
+  // Build group IDs to fetch
+  const gidsFromMembership=(memberships||[]).map(m=>m.group_id);
+  const gidsFromCreated=(created||[]).map(g=>g.id);
+  const allGids=[...new Set([...gidsFromMembership,...gidsFromCreated])];
+
+  if(!allGids.length){allGroups=[];renderGroupList([]);return;}
+
+  const{data:groups}=await sb.from('group_chats').select('*').in('id',allGids);
+
+  allGroups=(groups||[]).map(g=>{
+    let role=roleMap[g.id];
+    // If I created it and have no membership role, I'm owner
+    if(!role&&g.created_by===ME.id)role='owner';
+    return{...g,_myRole:role||'member'};
+  });
+
   renderGroupList(allGroups);
 }
 
@@ -1624,10 +1637,11 @@ async function openGroupChat(groupId){
     });
   }
 
-  // Set my actual role
+  // Set my actual role — trust _myRole from allGroups (loaded from DB)
   const myMembership=(members||[]).find(m=>m.user_id===ME.id);
   if(group.created_by===ME.id)currentGroupRole='owner';
-  else if(myMembership)currentGroupRole=myMembership.role||'member';
+  else if(myMembership?.role)currentGroupRole=myMembership.role;
+  else currentGroupRole=group._myRole||'member';
 
   groupMembers=Object.values(groupMembersCache);
   document.getElementById('gch-status').textContent=`${groupMembers.length} members`;
@@ -1672,10 +1686,13 @@ function showMemberMenu(e,uid,username,role){
   const isOwner=currentGroupRole==='owner';
   const menu=document.createElement('div');menu.className='ctx-menu';menu.id='ctx-menu';
   const items=[];
+  // Only OWNER can promote/demote/transfer
   if(isOwner&&role==='member')items.push({icon:'⭐',label:'Make Admin',fn:`setMemberRole('${uid}','${username}','admin')`});
   if(isOwner&&role==='admin')items.push({icon:'👤',label:'Remove Admin',fn:`setMemberRole('${uid}','${username}','member')`});
   if(isOwner)items.push({icon:'👑',label:'Transfer Ownership',fn:`transferOwnership('${uid}','${username}')`});
-  items.push({icon:'🚫',label:'Remove from Group',fn:`kickMember('${uid}','${username}')`,danger:true});
+  // Admin AND owner can kick
+  if(currentGroupRole==='owner'||currentGroupRole==='admin')
+    items.push({icon:'🚫',label:'Remove from Group',fn:`kickMember('${uid}','${username}')`,danger:true});
   menu.innerHTML=items.map(i=>`<div class="ctx-item ${i.danger?'danger':''}" onclick="${i.fn};closeCtxMenu()">${i.icon} ${i.label}</div>`).join('');
   const x=Math.min(e.clientX,window.innerWidth-185),y=Math.min(e.clientY,window.innerHeight-items.length*44);
   menu.style.left=x+'px';menu.style.top=y+'px';
