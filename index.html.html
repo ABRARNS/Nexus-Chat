@@ -460,6 +460,30 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--card2);border:1px solid var(--border2);border-radius:var(--r99);padding:10px 20px;font-size:12.5px;z-index:1000;opacity:0;pointer-events:none;transition:all .25s;font-family:var(--mono);box-shadow:var(--shadow);white-space:nowrap;color:var(--t1)}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* FLOATING MESSAGE NOTIFICATION */
+.float-notif{
+  position:fixed;top:-120px;left:50%;transform:translateX(-50%);
+  background:rgba(20,20,40,.97);border:1px solid rgba(0,255,225,.25);
+  border-radius:var(--r16);padding:12px 16px;
+  display:flex;align-items:center;gap:12px;
+  z-index:9000;cursor:pointer;
+  box-shadow:0 8px 40px rgba(0,0,0,.8),0 0 0 1px rgba(0,255,225,.1),inset 0 1px 0 rgba(255,255,255,.05);
+  transition:top .4s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+  max-width:340px;width:calc(100vw - 24px);
+  opacity:0;pointer-events:none;
+  backdrop-filter:blur(20px);
+}
+.float-notif.on{top:68px;opacity:1;pointer-events:all}
+@media(max-width:600px){.float-notif.on{top:62px}}
+.fn-av{width:42px;height:42px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;border:2px solid rgba(0,255,225,.3)}
+.fn-av img{width:100%;height:100%;object-fit:cover;display:block}
+.fn-body{flex:1;min-width:0}
+.fn-name{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px}
+.fn-msg{font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fn-time{font-size:9.5px;font-family:var(--mono);color:var(--t4);flex-shrink:0;align-self:flex-start;margin-top:2px}
+.fn-bar{position:absolute;bottom:0;left:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple));border-radius:0 0 var(--r16) var(--r16);animation:fnBar 4s linear forwards}
+@keyframes fnBar{from{width:100%}to{width:0%}}
+
 /* NOTIF */
 .notif-panel{position:fixed;top:60px;right:14px;width:300px;background:var(--card);border:1px solid var(--border2);border-radius:var(--r16);z-index:500;box-shadow:var(--shadow-lg);display:none;max-height:370px;overflow-y:auto}
 .notif-panel.on{display:block}
@@ -806,6 +830,15 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
   <div class="modal" id="user-modal-body"><div class="modal-x" onclick="closeModal('user-modal')">✕</div></div>
 </div>
 
+<div class="float-notif" id="float-notif" onclick="floatNotifClick()">
+  <div class="fn-av" id="fn-av"></div>
+  <div class="fn-body">
+    <div class="fn-name" id="fn-name"></div>
+    <div class="fn-msg" id="fn-msg"></div>
+  </div>
+  <div class="fn-time" id="fn-time">now</div>
+  <div class="fn-bar" id="fn-bar"></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <nav id="bottom-nav">
@@ -1071,11 +1104,12 @@ function startGlobalSub(){
         const{data:s}=await sb.from('profiles').select('*').eq('id',msg.sender_id).single();
         const name=s?.username||'Someone';
         addNotif(s||{username:'Someone'},msg.content?.slice(0,50)||'📷 image');
-        showToast(`💬 @${name}: ${(msg.content||'image').slice(0,28)}…`);
-        if(Notification.permission==='granted'){
+        showFloatNotif(s||{username:'Someone',avatar_url:''},msg.content||'📷 Sent an image',msg.sender_id);
+        // Also try browser notification when tab is hidden
+        if(Notification.permission==='granted'&&document.hidden){
           if(navigator.serviceWorker?.controller){
             navigator.serviceWorker.ready.then(reg=>reg.showNotification(`NEXUS — @${name}`,{body:msg.content||'Sent an image',icon:'/Nexus-Chat/icon-192.png',tag:'nexus-msg',renotify:true,vibrate:[200,100,200]}));
-          }else{new Notification(`NEXUS — @${name}`,{body:msg.content||'Sent an image',tag:'nexus'});}
+          }else{new Notification(`NEXUS-CHAT`,{body:`@${name}: ${msg.content||'Sent an image'}`,tag:'nexus'});}
         }
       }
     }).subscribe();
@@ -1910,10 +1944,10 @@ function subscribeToGroup(groupId){
     if(payload.sender_id===ME.id)return;
     const memberInfo=groupMembersCache[payload.sender_id]||{};
     appendGroupMsg(payload,memberInfo);
-    // notify if mentioned
+    // always show float notif for group messages from others
+    showFloatNotif(memberInfo,payload.content||'📷 Image',null);
     if(payload.content&&payload.content.includes(`@${ME.username}`)){
       addNotif(memberInfo,`mentioned you: ${payload.content.slice(0,40)}`);
-      showToast(`📣 @${memberInfo.username||'?'} mentioned you`);
     }
   });
   groupChannel.on('broadcast',{event:'typing'},({payload})=>{
@@ -2351,6 +2385,37 @@ function renderNotifs(){
 }
 
 function markRead(){notifs.forEach(n=>n.read=true);renderNotifs();}
+
+// ── FLOATING NOTIFICATION ──
+let floatNotifSenderId=null,floatNotifTimer=null;
+function showFloatNotif(profile,text,senderId){
+  floatNotifSenderId=senderId;
+  const uname=profile.username||'?';
+  const av=document.getElementById('fn-av');
+  av.style.background=uc(uname);
+  av.innerHTML=profile.avatar_url
+    ?`<img src="${profile.avatar_url}">`
+    :`<span>${uname[0].toUpperCase()}</span>`;
+  document.getElementById('fn-name').textContent='@'+uname;
+  document.getElementById('fn-msg').textContent=text.slice(0,60);
+  document.getElementById('fn-time').textContent='now';
+  // Reset bar animation
+  const bar=document.getElementById('fn-bar');
+  bar.style.animation='none';
+  bar.offsetHeight; // reflow
+  bar.style.animation='fnBar 4s linear forwards';
+  const el=document.getElementById('float-notif');
+  el.classList.add('on');
+  clearTimeout(floatNotifTimer);
+  floatNotifTimer=setTimeout(()=>el.classList.remove('on'),4000);
+}
+function floatNotifClick(){
+  document.getElementById('float-notif').classList.remove('on');
+  if(floatNotifSenderId){
+    setView('chat',document.getElementById('nav-chat'));
+    openChat(floatNotifSenderId);
+  }
+}
 function toggleNotifs(){const p=document.getElementById('notif-panel');p.classList.toggle('on');if(p.classList.contains('on'))renderNotifs();}
 
 // ── LIGHTBOX ──
