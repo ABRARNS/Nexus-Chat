@@ -17,7 +17,25 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "45c5191c-f5f9-4868-827c-cd108aeed138",
+      serviceWorkerPath: "/Nexus-Chat/sw.js",
+      serviceWorkerParam: { scope: "/Nexus-Chat/" },
+      promptOptions: {
+        slidedown: {
+          prompts: [{
+            type: "push",
+            autoPrompt: true,
+            text: {
+              actionMessage: "NEXUS-CHAT wants to send you notifications when you get a message.",
+              acceptButton: "Allow",
+              cancelButton: "No thanks"
+            },
+            delay: { timeDelay: 3, pageViews: 1 }
+          }]
+        }
+      }
     });
+    // Also request permission directly after init
+    await OneSignal.Notifications.requestPermission();
   });
 </script>
 <style>
@@ -1119,8 +1137,6 @@ function startGlobalSub(){
         const name=s?.username||'Someone';
         addNotif(s||{username:'Someone'},msg.content?.slice(0,50)||'📷 image');
         showFloatNotif(s||{username:'Someone',avatar_url:''},msg.content||'📷 Sent an image',msg.sender_id);
-        // Send push notification via OneSignal to the receiver
-        sendPushToUser(ME.id,`NEXUS-CHAT — @${name}`,msg.content||'📷 Sent an image');
       }
     }).subscribe();
 }
@@ -1426,6 +1442,8 @@ async function sendMsg(){
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
   if(chatChannel)chatChannel.send({type:'broadcast',event:'msg',payload:{...newMsg}});
+  // Push to receiver — works even when their tab/app is closed
+  sendPushToUser(currentChat,`@${ME.username}`,text||'📷 Sent an image');
   loadConvos();
 }
 
