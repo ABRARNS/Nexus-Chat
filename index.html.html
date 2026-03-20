@@ -17,10 +17,6 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "45c5191c-f5f9-4868-827c-cd108aeed138",
-      serviceWorkerPath: "/Nexus-Chat/sw.js",
-      serviceWorkerParam: { scope: "/Nexus-Chat/" },
-      notifyButton: { enable: false },
-      allowLocalhostAsSecureOrigin: true,
     });
   });
 </script>
@@ -790,7 +786,6 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="fl">Bio</div><textarea class="fi" id="edit-bio" placeholder="Tell people about yourself…"></textarea>
     <button class="mbtn prim" onclick="saveProfile()">SAVE CHANGES</button>
     <button class="mbtn sec" onclick="closeModal('profile-modal');openBlockedList()">🚫 Blocked Users</button>
-    <button class="mbtn sec" onclick="showFloatNotif({username:'TestUser',avatar_url:''},'This is a test notification! 👋',null)">🔔 Test Notification</button>
     <button class="mbtn danger" onclick="signOut()">🚪 Sign Out</button>
   </div>
 </div>
