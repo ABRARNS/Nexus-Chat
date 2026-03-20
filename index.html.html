@@ -804,6 +804,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="fl">Bio</div><textarea class="fi" id="edit-bio" placeholder="Tell people about yourself…"></textarea>
     <button class="mbtn prim" onclick="saveProfile()">SAVE CHANGES</button>
     <button class="mbtn sec" onclick="closeModal('profile-modal');openBlockedList()">🚫 Blocked Users</button>
+    <button class="mbtn sec" id="notif-enable-btn" onclick="enableNotifications()">🔔 Enable Notifications</button>
     <button class="mbtn danger" onclick="signOut()">🚪 Sign Out</button>
   </div>
 </div>
@@ -928,6 +929,7 @@ async function showApp(){
   document.getElementById('auth').style.display='none';
   document.getElementById('app').classList.add('on');
   renderMyAv();
+  checkNotifStatus();
   loadBlocks();
   loadConvos();
   loadGroups();
@@ -2414,6 +2416,46 @@ function renderNotifs(){
 
 function markRead(){notifs.forEach(n=>n.read=true);renderNotifs();}
 
+// ── ENABLE NOTIFICATIONS ──
+async function enableNotifications(){
+  try{
+    // Try native browser permission first
+    const perm=await Notification.requestPermission();
+    if(perm==='granted'){
+      // Also trigger OneSignal opt-in
+      if(window.OneSignalDeferred){
+        OneSignalDeferred.push(async function(OneSignal){
+          await OneSignal.Notifications.requestPermission();
+          const isSubscribed=await OneSignal.User.PushSubscription.optedIn;
+          if(isSubscribed){
+            showToast('✅ Notifications enabled!');
+            document.getElementById('notif-enable-btn').textContent='✅ Notifications On';
+          }
+        });
+      }else{
+        showToast('✅ Notifications enabled!');
+        document.getElementById('notif-enable-btn').textContent='✅ Notifications On';
+      }
+    } else if(perm==='denied'){
+      showToast('❌ Blocked — enable in browser settings');
+      // Show instructions
+      const btn=document.getElementById('notif-enable-btn');
+      if(btn)btn.textContent='⚠️ Blocked in settings';
+    }
+  }catch(e){
+    showToast('❌ '+e.message);
+  }
+}
+
+// Check notification status on load
+function checkNotifStatus(){
+  const btn=document.getElementById('notif-enable-btn');
+  if(!btn)return;
+  if(Notification.permission==='granted')btn.textContent='✅ Notifications On';
+  else if(Notification.permission==='denied')btn.textContent='⚠️ Notifications Blocked';
+  else btn.textContent='🔔 Enable Notifications';
+}
+
 // ── ONESIGNAL PUSH ──
 async function sendPushToUser(toUserId,title,message){
   try{
@@ -2532,6 +2574,19 @@ style.textContent='@keyframes highlight{0%,100%{box-shadow:none}50%{box-shadow:0
 document.head.appendChild(style);
 
 setTimeout(()=>{if(!document.getElementById('loading').classList.contains('hide'))showAuth();},5000);
+
+// ── PWA INSTALL PROMPT ──
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  // Show install banner after 3 seconds if not installed
+  setTimeout(()=>{
+    if(deferredInstallPrompt&&ME){
+      showToast('📲 Add NEXUS to home screen for notifications!');
+    }
+  },3000);
+});
 
 // ── STATUS CYCLING ──
 (function(){
