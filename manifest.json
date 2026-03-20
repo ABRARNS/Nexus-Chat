@@ -1,0 +1,37 @@
+{
+  "name": "NEXUS-CHAT",
+  "short_name": "NEXUS",
+  "description": "Real-time social network — message friends, post to feed, meet people.",
+  "start_url": "/Nexus-Chat/",
+  "scope": "/Nexus-Chat/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a12",
+  "theme_color": "#00ffe1",
+  "categories": ["social", "communication"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Messages",
+      "short_name": "Chat",
+      "description": "Open your messages",
+      "url": "/Nexus-Chat/",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
