@@ -2839,6 +2839,9 @@ function closeStoryViewer(){
 
 function showCurrentStory(){
   clearTimeout(storyTimer);
+  // Always hide delete button first, will show only if own story
+  const delWrap=document.getElementById('sv-delete-wrap');
+  if(delWrap)delWrap.style.display='none';
   const userGroup=currentStories[currentStoryIdx];
   if(!userGroup){closeStoryViewer();return;}
   const story=userGroup.stories[currentUserStoryIdx];
@@ -2882,7 +2885,6 @@ function showCurrentStory(){
     sb.from('story_views').upsert({story_id:story.id,user_id:ME.id}).catch(()=>{});
   }
   // Show delete button only for own stories
-  const delWrap=document.getElementById('sv-delete-wrap');
   if(delWrap)delWrap.style.display=String(story.user_id)===String(ME.id)?'block':'none';
 }
 
