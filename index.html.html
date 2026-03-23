@@ -2383,7 +2383,7 @@ async function openGroupInfo(){
     ${isOwner?`
       <div style="margin-top:12px">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--t4);margin-bottom:6px;font-family:var(--mono)">INVITE LINK</div>
-        ${group?.invite_code?`<div class="invite-link-box" onclick="copyInviteLink('${group.invite_code}')">https://abrarns.github.io/Nexus-Chat/?join=${group.invite_code}<br><span style="color:var(--t4);font-size:9px">tap to copy</span></div>`:``}
+        ${group?.invite_code?`<div class="invite-link-box" onclick="copyInviteLink('${group.invite_code}')">https://abrarns.github.io/Nexus-Chat/index.html?join=${group.invite_code}<br><span style="color:var(--t4);font-size:9px">tap to copy</span></div>`:``}
         <button class="mbtn sec" style="margin-bottom:8px" onclick="generateAndShowInvite()">🔗 ${group?.invite_code?'Regenerate':'Generate'} Invite Link</button>
       </div>`:''}
     <button class="mbtn danger" style="margin-top:4px" onclick="closeModal('group-info-modal');leaveGroup()">🚪 Leave Group</button>`;
@@ -2964,7 +2964,7 @@ async function deleteComment(commentId,postId){
 }
 
 function copyInviteLink(code){
-  const link=`https://abrarns.github.io/Nexus-Chat/?join=${code}`;
+  const link=`https://abrarns.github.io/Nexus-Chat/index.html?join=${code}`;
   navigator.clipboard.writeText(link).then(()=>showToast('🔗 Link copied!')).catch(()=>showToast('🔗 '+link));
 }
 async function generateAndShowInvite(){
@@ -2977,7 +2977,7 @@ async function generateInviteLink(){
   const code=Math.random().toString(36).slice(2,10).toUpperCase();
   await sb.from('group_chats').update({invite_code:code}).eq('id',currentGroup);
   currentGroupData={...currentGroupData,invite_code:code};
-  const link=`https://abrarns.github.io/Nexus-Chat/?join=${code}`;
+  const link=`https://abrarns.github.io/Nexus-Chat/index.html?join=${code}`;
   showToast('✅ Invite link created!');
   return link;
 }
