@@ -56,7 +56,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:var(--fon
 ::selection{background:rgba(0,255,225,.2)}
 body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,225,.004) 2px,rgba(0,255,225,.004) 4px);pointer-events:none;z-index:9999}
 
-/* ── EPIC LOADING SCREEN ── */
+/* -- EPIC LOADING SCREEN -- */
 #loading{
   position:fixed;inset:0;
   background:radial-gradient(ellipse at 50% 40%,#0d0d2e 0%,#050510 60%,#000 100%);
@@ -538,7 +538,72 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 .blocked-av img{width:100%;height:100%;object-fit:cover;display:block}
 .unblock-btn{margin-left:auto;padding:6px 12px;border-radius:var(--r8);font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid rgba(0,232,122,.25);background:rgba(0,232,122,.08);color:var(--green);transition:all .15s;font-family:var(--font)}
 
+/* -- STORIES -- */
+.stories-bar{display:flex;gap:12px;padding:8px 0 18px;overflow-x:auto;scrollbar-width:none;min-height:90px}
+.stories-bar::-webkit-scrollbar{display:none}
+.story-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;flex-shrink:0}
+.story-ring{width:64px;height:64px;border-radius:50%;padding:3px;background:linear-gradient(135deg,var(--cyan),var(--purple),var(--pink));position:relative;flex-shrink:0}
+.story-ring.seen{background:var(--card3)}
+.story-ring.mine{background:linear-gradient(135deg,var(--purple),var(--pink))}
+.story-av{width:100%;height:100%;border-radius:50%;background:var(--card2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;border:2px solid var(--bg)}
+.story-av img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
+.story-add{position:absolute;bottom:0;right:0;width:22px;height:22px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:13px;color:#000;font-weight:800;line-height:1}
+.story-name{font-size:10px;font-family:var(--mono);color:var(--t3);text-align:center;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* -- STORY VIEWER -- */
+.story-viewer{position:fixed;inset:0;background:#000;z-index:800;display:none;flex-direction:column}
+.story-viewer.on{display:flex}
+.story-progress-bar{display:flex;gap:3px;padding:12px 12px 8px;position:absolute;top:0;left:0;right:0;z-index:2}
+.story-progress-seg{height:2px;border-radius:2px;background:rgba(255,255,255,.3);flex:1;overflow:hidden}
+.story-progress-fill{height:100%;background:#fff;width:0%;transition:width linear}
+.story-header{position:absolute;top:30px;left:0;right:0;display:flex;align-items:center;gap:10px;padding:0 14px;z-index:2}
+.story-header-av{width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.story-header-av img{width:100%;height:100%;object-fit:cover;display:block}
+.story-header-name{font-size:13px;font-weight:700;color:#fff}
+.story-header-time{font-size:10px;color:rgba(255,255,255,.6);font-family:var(--mono)}
+.story-close{margin-left:auto;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1}
+.story-content{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+.story-img{max-width:100%;max-height:100%;object-fit:contain}
+.story-text-content{color:#fff;font-size:22px;font-weight:700;text-align:center;padding:40px;line-height:1.6;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.story-tap-left{position:absolute;left:0;top:0;bottom:0;width:40%;cursor:pointer}
+.story-tap-right{position:absolute;right:0;top:0;bottom:0;width:40%;cursor:pointer}
+.story-views-bar{padding:12px 16px;display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.7);font-size:12px;font-family:var(--mono)}
+
+/* -- COMMENTS -- */
+.comments-section{border-top:1px solid var(--border);margin-top:10px;padding-top:12px}
+.comment-item{display:flex;gap:8px;margin-bottom:10px;align-items:flex-start}
+.comment-av{width:28px;height:28px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.comment-av img{width:100%;height:100%;object-fit:cover;display:block}
+.comment-body{flex:1;background:var(--card2);border-radius:var(--r12);padding:8px 12px}
+.comment-name{font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:2px}
+.comment-text{font-size:13px;color:var(--t2);line-height:1.5}
+.comment-time{font-size:9.5px;color:var(--t4);font-family:var(--mono);margin-top:3px}
+.comment-input-row{display:flex;gap:8px;margin-top:10px;align-items:center}
+.comment-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r99);padding:8px 14px;font-size:13px;color:var(--t1);font-family:var(--font);outline:none;transition:border-color .2s}
+.comment-input:focus{border-color:rgba(0,255,225,.3)}
+.comment-input::placeholder{color:var(--t4)}
+.comment-send{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--cyan));border:none;color:#000;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* -- FOLLOW BUTTON -- */
+.follow-btn{padding:7px 16px;border-radius:var(--r8);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .15s;border:1px solid rgba(0,255,225,.3);background:var(--cyan-dim);color:var(--cyan)}
+.follow-btn.following{background:var(--card2);border-color:var(--border);color:var(--t3)}
+.follow-btn:hover{opacity:.85}
+
+/* -- GLOBAL SEARCH -- */
+.search-modal-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r12);padding:12px 16px;font-size:15px;color:var(--t1);font-family:var(--font);outline:none;margin-bottom:16px;transition:all .2s}
+.search-modal-input:focus{border-color:rgba(0,255,225,.3)}
+.search-tabs{display:flex;gap:3px;background:var(--bg3);border-radius:var(--r8);padding:3px;margin-bottom:16px}
+.search-tab{flex:1;padding:7px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;border:none;background:none;color:var(--t4);font-family:var(--font);transition:all .15s}
+.search-tab.on{background:var(--card2);color:var(--t1)}
+
+/* -- INVITE LINK -- */
+.invite-link-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r12);padding:12px 14px;font-size:12px;font-family:var(--mono);color:var(--cyan);word-break:break-all;margin-bottom:10px;cursor:pointer}
+
+/* -- DISAPPEARING MESSAGES -- */
+.disappear-badge{font-size:9px;font-family:var(--mono);color:var(--gold);background:rgba(255,183,0,.1);border:1px solid rgba(255,183,0,.2);border-radius:4px;padding:1px 5px;margin-left:6px}
+
 /* BOTTOM NAV */
+#bottom-nav{/* BOTTOM NAV */
 #bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.97);border-top:1px solid var(--border);backdrop-filter:blur(20px);z-index:150;padding:4px 0 calc(4px + env(safe-area-inset-bottom));justify-content:space-around;align-items:center}
 .bn-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 12px;border-radius:var(--r12);cursor:pointer;transition:all .15s;color:var(--t4);border:none;background:none;flex:1;max-width:80px}
 .bn-btn.on{color:var(--cyan)}
@@ -632,6 +697,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="top-logo" onclick="mobileBack()">NEXUS</div>
     <div class="top-search"><span class="top-search-ico">⌕</span><input placeholder="Search users…" id="top-search" oninput="searchUsers(this.value)"></div>
     <div class="top-right">
+      <div class="top-icon" onclick="openModal('search-modal')">🔍</div>
       <div class="top-icon" id="notif-btn" onclick="toggleNotifs()">🔔<span class="top-badge" id="notif-badge"></span></div>
       <div class="my-av" id="my-av" onclick="openModal('profile-modal')"><span id="my-av-init">?</span><img id="my-av-img" src="" style="display:none"></div>
       <input type="file" id="av-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
@@ -667,6 +733,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
               <div class="ch-info"><div class="ch-name" id="ch-name"></div><div class="ch-status" id="ch-status"><span class="dot"></span><span id="ch-status-txt">Offline</span></div></div>
               <div class="ch-actions">
                 <button class="ch-btn" id="btn-search" onclick="toggleMsgSearch()">🔍</button>
+                <button class="ch-btn" id="btn-disappear" onclick="toggleDisappearing()" title="Disappearing messages">⏱</button>
                 <button class="ch-btn" onclick="viewProfile(currentChat)">👤</button>
               </div>
             </div>
@@ -721,6 +788,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
               <div class="ch-av group" id="gch-av" style="font-size:18px">👥</div>
               <div class="ch-info"><div class="ch-name" id="gch-name"></div><div class="ch-status" id="gch-status" style="color:var(--t4)"></div></div>
               <div class="ch-actions">
+                <button class="ch-btn" id="announce-btn" onclick="openAnnouncement()" style="display:none" title="Announce">📢</button>
                 <button class="ch-btn" onclick="openGroupInfo()">ⓘ</button>
               </div>
             </div>
@@ -732,6 +800,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
             </div>
             <div class="msgs-wrap" id="group-msgs"></div>
             <div class="typing-line" id="group-typing-line"></div>
+            <div id="announcement-bar" style="display:none;background:rgba(255,183,0,.08);border-top:1px solid rgba(255,183,0,.2);padding:8px 16px;font-size:12px;color:var(--gold);font-family:var(--mono)">📢 <span id="announcement-text"></span></div>
             <div class="input-zone">
               <div class="mention-drop" id="group-mention-drop"></div>
               <div class="input-row">
@@ -751,19 +820,31 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 
       <!-- PEOPLE VIEW -->
       <div class="view" id="view-people">
-        <div class="view-hd">🌍 Meet People</div>
-        <div class="view-sub">// real users on nexus</div>
-        <div style="position:relative;margin-bottom:18px">
+        <div class="view-hd">🌍 People</div>
+        <div style="display:flex;gap:3px;background:var(--bg3);border-radius:var(--r8);padding:3px;margin-bottom:16px">
+          <button class="cp-tab on" id="ptab-all" onclick="switchPeopleTab('all')">Discover</button>
+          <button class="cp-tab" id="ptab-following" onclick="switchPeopleTab('following')">Following</button>
+          <button class="cp-tab" id="ptab-followers" onclick="switchPeopleTab('followers')">Followers</button>
+          <button class="cp-tab" id="ptab-visitors" onclick="switchPeopleTab('visitors')">Visited Me</button>
+        </div>
+        <div style="position:relative;margin-bottom:16px">
           <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t4);font-size:14px;pointer-events:none">⌕</span>
-          <input oninput="searchUsers(this.value)" placeholder="Search by username…" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r12);padding:10px 14px 10px 36px;font-size:13.5px;color:var(--t1);font-family:var(--font);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='rgba(0,255,225,.3)'" onblur="this.style.borderColor='var(--border)'">
+          <input id="people-search-input" oninput="searchUsers(this.value)" placeholder="Search by username…" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r12);padding:10px 14px 10px 36px;font-size:13.5px;color:var(--t1);font-family:var(--font);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='rgba(0,255,225,.3)'" onblur="this.style.borderColor='var(--border)'">
         </div>
         <div class="people-grid" id="people-grid"></div>
       </div>
 
       <!-- FEED VIEW -->
-      <div class="view" id="view-feed">
+      <div class="view" id="view-feed" style="overflow-y:auto">
         <div class="view-hd">📰 Feed</div>
         <div class="view-sub">// posts from everyone</div>
+        <!-- STORIES BAR -->
+        <div style="font-size:13px;font-weight:700;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          <span>Stories</span>
+          <span style="font-size:10px;font-weight:400;color:var(--t4);font-family:var(--mono)">// from people you follow</span>
+        </div>
+        <div class="stories-bar" id="stories-bar"></div>
+
         <div class="composer">
           <div class="composer-av" id="feed-av"></div>
           <div style="flex:1"><textarea class="composer-ta" id="post-input" placeholder="What's on your mind?"></textarea><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="post-btn" onclick="createPost()">POST</button></div></div>
@@ -772,6 +853,60 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- STORY VIEWER -->
+<div class="story-viewer" id="story-viewer">
+  <div class="story-progress-bar" id="story-progress-bar"></div>
+  <div class="story-header">
+    <div class="story-header-av" id="sv-av"></div>
+    <div><div class="story-header-name" id="sv-name"></div><div class="story-header-time" id="sv-time"></div></div>
+    <span class="story-close" onclick="closeStoryViewer()">✕</span>
+  </div>
+  <div class="story-content" id="sv-content">
+    <div class="story-tap-left" onclick="prevStory()"></div>
+    <div class="story-tap-right" onclick="nextStory()"></div>
+  </div>
+  <div class="story-views-bar" id="sv-views">
+    <button id="sv-delete-btn" onclick="deleteCurrentStory()" style="display:none;background:rgba(255,45,120,.15);border:1px solid rgba(255,45,120,.3);border-radius:var(--r8);color:var(--pink);padding:6px 14px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:600">🗑 Delete Story</button>
+  </div>
+</div>
+
+<!-- GLOBAL SEARCH MODAL -->
+<div class="overlay" id="search-modal" onclick="closeBg(event,'search-modal')">
+  <div class="modal" style="max-height:85vh">
+    <div class="modal-x" onclick="closeModal('search-modal')">✕</div>
+    <div class="modal-title">🔍 Search</div>
+    <input class="search-modal-input" id="search-modal-input" placeholder="Search users, posts..." oninput="globalSearch(this.value)">
+    <div class="search-tabs">
+      <button class="search-tab on" id="stab-users" onclick="switchSearchTab('users')">People</button>
+      <button class="search-tab" id="stab-posts" onclick="switchSearchTab('posts')">Posts</button>
+    </div>
+    <div id="search-results" style="max-height:50vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- STORY CREATE MODAL -->
+<div class="overlay" id="story-modal" onclick="closeBg(event,'story-modal')">
+  <div class="modal">
+    <div class="modal-x" onclick="closeModal('story-modal')">✕</div>
+    <div class="modal-title">📸 New Story</div>
+    <div class="modal-sub">disappears in 24 hours</div>
+    <div style="border:2px dashed rgba(0,255,225,.2);border-radius:var(--r16);padding:20px;text-align:center;margin-bottom:16px;cursor:pointer" onclick="document.getElementById('story-img-input').click()">
+      <div id="story-img-preview" style="font-size:32px;margin-bottom:8px">📷</div>
+      <div style="font-size:12px;color:var(--t4);font-family:var(--mono)">tap to add photo</div>
+      <input type="file" id="story-img-input" accept="image/*" style="display:none" onchange="previewStoryMedia(this)">
+    </div>
+    <textarea class="fi" id="story-text" placeholder="What's on your mind? (optional)" style="min-height:80px"></textarea>
+    <button class="mbtn prim" onclick="createStory()">📤 SHARE STORY</button>
+  </div>
+</div>
+
+<!-- COMMENTS MODAL -->
+<div class="overlay" id="comments-modal" onclick="closeBg(event,'comments-modal')">
+  <div class="modal" id="comments-modal-body" style="max-height:85vh;overflow-y:auto">
+    <div class="modal-x" onclick="closeModal('comments-modal')">✕</div>
   </div>
 </div>
 
@@ -804,8 +939,10 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="fl">Bio</div><textarea class="fi" id="edit-bio" placeholder="Tell people about yourself…"></textarea>
     <button class="mbtn prim" onclick="saveProfile()">SAVE CHANGES</button>
     <button class="mbtn sec" onclick="closeModal('profile-modal');openBlockedList()">🚫 Blocked Users</button>
+    <button class="mbtn sec" onclick="openProfileVisitorsModal()">👁 Who Viewed My Profile</button>
     <button class="mbtn sec" id="notif-enable-btn" onclick="enableNotifications()">🔔 Enable Notifications</button>
     <button class="mbtn danger" onclick="signOut()">🚪 Sign Out</button>
+    <button class="mbtn danger" style="opacity:.5;font-size:11px;padding:8px" onclick="deleteAccount()">Delete Account</button>
   </div>
 </div>
 
@@ -874,6 +1011,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
   <button class="bn-btn" id="bn-groups" onclick="setView('groups',document.getElementById('nav-groups'));bnActive('bn-groups')"><span class="bn-icon">👥</span><span class="bn-lbl">groups</span></button>
   <button class="bn-btn" id="bn-people" onclick="setView('people',document.getElementById('nav-people'));bnActive('bn-people')"><span class="bn-icon">🌍</span><span class="bn-lbl">meet</span></button>
   <button class="bn-btn" id="bn-feed" onclick="setView('feed',document.getElementById('nav-feed'));bnActive('bn-feed')"><span class="bn-icon">📰</span><span class="bn-lbl">feed</span></button>
+  <button class="bn-btn" id="bn-search" onclick="openModal('search-modal')"><span class="bn-icon">🔍</span><span class="bn-lbl">search</span></button>
   <button class="bn-btn" id="bn-me" onclick="openModal('profile-modal')"><span class="bn-icon">👤</span><span class="bn-lbl">me</span></button>
 </nav>
 
@@ -882,7 +1020,7 @@ const SURL='https://pvahgjdvgcnkozprszya.supabase.co';
 const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2YWhnamR2Z2Nua296cHJzenlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODI5NDUsImV4cCI6MjA4ODk1ODk0NX0.Yp5Fn5-IHXhToTsI2-Hg2JgXy05RhHhgaAlGY_xbu5g';
 const sb=supabase.createClient(SURL,SKEY);
 
-// ── STATE ──
+// -- STATE --
 let ME=null, currentChat=null, currentProfile=null;
 let currentGroup=null, currentGroupData=null, currentGroupRole='member';
 let chatChannel=null, groupChannel=null, presenceCh=null, globalCh=null;
@@ -901,7 +1039,7 @@ const EMOJIS={'😀':['😀','😂','🥹','😍','🤔','😎','🥳','🤩','�
 const RXNS=['❤️','🔥','😂','👍','✨','😮','😢'];
 const URL_REGEX=/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/gi;
 
-// ── INIT ──
+// -- INIT --
 async function init(){
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/Nexus-Chat/sw.js').catch(()=>{});
   // OneSignal - link user ID so we can target specific users
@@ -931,12 +1069,15 @@ async function showApp(){
   renderMyAv();
   checkNotifStatus();
   loadBlocks();
+  loadFollowing();
   loadConvos();
   loadGroups();
   loadFeed();
+  loadStories();
   loadUsers();
   startPresence();
   startGlobalSub();
+  checkInviteCode();
 }
 
 function showAuth(){
@@ -946,7 +1087,7 @@ function showAuth(){
   document.getElementById('auth').style.display='flex';
 }
 
-// ── AUTH ──
+// -- AUTH --
 function authTab(t){
   document.getElementById('form-in').style.display=t==='in'?'':'none';
   document.getElementById('form-up').style.display=t==='up'?'':'none';
@@ -1003,7 +1144,7 @@ async function signOut(){
   showToast('👋 Signed out');
 }
 
-// ── AVATAR ──
+// -- AVATAR --
 function renderMyAv(){
   const init=document.getElementById('my-av-init'),img=document.getElementById('my-av-img');
   init.textContent=(ME.username||'?')[0].toUpperCase();
@@ -1042,7 +1183,21 @@ async function saveProfile(){
   ME.username=username;ME.bio=bio;renderMyAv();closeModal('profile-modal');showToast('✅ Saved!');
 }
 
-// ── IMAGE UTILS ──
+// -- IMAGE UTILS --
+async function compressStory(file){
+  return new Promise(res=>{
+    const img=new Image(),url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      const max=600;
+      if(w>h){if(w>max){h=h*max/w;w=max;}}else{if(h>max){w=w*max/h;h=max;}}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      c.toBlob(b=>{URL.revokeObjectURL(url);res(b);},'image/jpeg',.55);
+    };img.src=url;
+  });
+}
+
 async function compress(file,mw,mh){
   return new Promise(res=>{
     const img=new Image(),url=URL.createObjectURL(file);
@@ -1079,7 +1234,7 @@ function attachGroupImage(inp){
   pendingGroupImg=file;showToast('🖼 Image ready to send');
 }
 
-// ── PRESENCE ──
+// -- PRESENCE --
 function startPresence(){
   presenceCh=sb.channel('nexus-online');
   presenceCh.on('broadcast',{event:'heartbeat'},({payload})=>{
@@ -1125,7 +1280,7 @@ function updateOnlineUI(){
   });
 }
 
-// ── GLOBAL SUBSCRIPTION ──
+// -- GLOBAL SUBSCRIPTION --
 function startGlobalSub(){
   globalCh=sb.channel('global-inbox')
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`receiver_id=eq.${ME.id}`},async payload=>{
@@ -1143,7 +1298,7 @@ function startGlobalSub(){
     }).subscribe();
 }
 
-// ── BLOCK ──
+// -- BLOCK --
 async function loadBlocks(){
   try{const{data,error}=await sb.from('blocked_users').select('blocked_id').eq('blocker_id',ME.id);if(!error)blockedUsers=new Set((data||[]).map(b=>b.blocked_id));}catch{}
 }
@@ -1180,7 +1335,7 @@ async function openBlockedList(){
   openModal('privacy-modal');
 }
 
-// ── CONVERSATIONS ──
+// -- CONVERSATIONS --
 let lastMsgsCache={};
 
 async function loadConvos(){
@@ -1226,7 +1381,7 @@ async function filterConvos(v){
   renderConvos((p||[]).filter(u=>!blockedUsers.has(u.id)),v);
 }
 
-// ── OPEN CHAT ──
+// -- OPEN CHAT --
 async function openChat(uid){
   currentChat=uid;currentGroup=null;
   mobileShowChat('chat');
@@ -1257,7 +1412,7 @@ function highlightConvo(uid){
   const el=document.getElementById('ci-'+uid);if(el)el.classList.add('on');
 }
 
-// ── BROADCAST ──
+// -- BROADCAST --
 function subscribeToBroadcast(uid){
   if(chatChannel)sb.removeChannel(chatChannel);
   const key=[ME.id,uid].sort().join('-');
@@ -1284,7 +1439,7 @@ function broadcastTyping(isTyping){
   if(chatChannel&&currentChat)chatChannel.send({type:'broadcast',event:'typing',payload:{uid:ME.id,typing:isTyping}});
 }
 
-// ── TYPING (smooth, debounced 400ms) ──
+// -- TYPING (smooth, debounced 400ms) --
 function showTyping(el,isTyping,username){
   if(!el)return;
   if(isTyping){
@@ -1317,7 +1472,7 @@ async function markReadDB(msgId){
   if(chatChannel)chatChannel.send({type:'broadcast',event:'read',payload:{uid:ME.id}});
 }
 
-// ── LOAD MESSAGES ──
+// -- LOAD MESSAGES --
 async function loadMsgs(){
   const{data}=await sb.from('messages')
     .select('*')
@@ -1344,7 +1499,7 @@ function appendMsg(msg){
   scrollBottom('msgs',true);
 }
 
-// ── FORMAT TIME (HH:MM AM/PM) ──
+// -- FORMAT TIME (HH:MM AM/PM) --
 function fmtTime(ts){
   const d=new Date(ts);
   let h=d.getHours(),m=d.getMinutes(),ampm=h>=12?'PM':'AM';
@@ -1352,7 +1507,7 @@ function fmtTime(ts){
   return `${h}:${String(m).padStart(2,'0')} ${ampm}`;
 }
 
-// ── RENDER CONTENT (links + mentions) ──
+// -- RENDER CONTENT (links + mentions) --
 function renderContent(text,groupMembersList){
   if(!text)return'';
   let out=esc(text);
@@ -1368,7 +1523,7 @@ function renderContent(text,groupMembersList){
   return out;
 }
 
-// ── MAKE BUBBLE ──
+// -- MAKE BUBBLE --
 function makeBubble(msg,isFirst,groupMode,membersList){
   const isMe=msg.sender_id===ME.id;
   const p=isMe?ME:(groupMode?(groupMembersCache[msg.sender_id]||{}):currentProfile);
@@ -1378,6 +1533,7 @@ function makeBubble(msg,isFirst,groupMode,membersList){
   const t=fmtTime(msg.created_at);
   const hasImg=msg.media_type==='image'&&msg.media_url;
   const isFwd=(msg.content||'').startsWith('↪ ');
+  const isDisappearing=msg.disappears_at&&new Date(msg.disappears_at)>new Date();
   const contentText=hasImg?(msg.content||''):msg.content||'';
   const renderedText=renderContent(contentText,groupMode?membersList:null);
   const content=hasImg?`${renderedText?`<div style="margin-bottom:6px">${renderedText}</div>`:''}<img class="msg-img" src="${msg.media_url}" onclick="openLbox('${msg.media_url.replace(/'/g,"\\'")}')">`:renderedText;
@@ -1397,6 +1553,7 @@ function makeBubble(msg,isFirst,groupMode,membersList){
     ${isFirst?`<div class="msg-av ${isMe?'hide':''}">${avHtml}</div>`:`<div class="msg-av hide"></div>`}
     <div class="msg-col">
       ${isFirst&&!isMe?`<div class="msg-sender" style="color:${col.includes('gradient')?'var(--cyan)':col}">@${uname} ${roleBadge}</div>`:''}
+      ${isDisappearing?`<div class="disappear-badge">⏱ disappearing</div>`:''}
       ${isFwd?`<div class="fwd-label">↪ forwarded</div>`:''}
       <div class="bubble ${isMe?'me':'them'} ${hasImg?'img-only':''}" id="bub-${msg.id}"
         oncontextmenu="showCtxMenu(event,'${msg.id}',${isMe},${!!groupMode});event.preventDefault()"
@@ -1421,7 +1578,7 @@ function makeBubble(msg,isFirst,groupMode,membersList){
 
 function scrollBottom(id,smooth=false){const w=document.getElementById(id);if(w)w.scrollTo({top:w.scrollHeight,behavior:smooth?'smooth':'auto'});}
 
-// ── SEND DM ──
+// -- SEND DM --
 async function sendMsg(){
   const inp=document.getElementById('msg-input');
   const text=inp.value.trim();
@@ -1439,7 +1596,9 @@ async function sendMsg(){
   bubble.querySelector('.bubble')?.classList.add('faded');
   wrap.appendChild(bubble);scrollBottom('msgs',true);
 
-  const{data:newMsg,error}=await sb.from('messages').insert({sender_id:ME.id,receiver_id:currentChat,content:text||null,media_url,media_type}).select().single();
+  const msgData={sender_id:ME.id,receiver_id:currentChat,content:text||null,media_url,media_type};
+  if(disappearingMode)msgData.disappears_at=new Date(Date.now()+disappearingMode).toISOString();
+  const{data:newMsg,error}=await sb.from('messages').insert(msgData).select().single();
   if(error){showToast('❌ '+error.message);bubble.remove();return;}
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
@@ -1449,7 +1608,7 @@ async function sendMsg(){
   loadConvos();
 }
 
-// ── DELETE DM ──
+// -- DELETE DM --
 async function deleteMsg(msgId){
   const{error}=await sb.from('messages').delete().eq('id',msgId).eq('sender_id',ME.id);
   if(error){showToast('❌ '+error.message);return;}
@@ -1459,7 +1618,7 @@ async function deleteMsg(msgId){
   if(chatChannel)chatChannel.send({type:'broadcast',event:'del',payload:{id:msgId}});
 }
 
-// ── COPY MESSAGE ──
+// -- COPY MESSAGE --
 function copyMsg(msgId){
   const msg=loadedMsgs.find(m=>m.id===msgId)||loadedGroupMsgs.find(m=>m.id===msgId);
   if(!msg?.content){showToast('Nothing to copy');return;}
@@ -1469,7 +1628,7 @@ function copyMsg(msgId){
   });
 }
 
-// ── FORWARD ──
+// -- FORWARD --
 let fwdContent=null;
 async function forwardMsg(msgId){
   const msg=loadedMsgs.find(m=>m.id===msgId);if(!msg)return;
@@ -1495,7 +1654,7 @@ async function doForward(toUid){
   fwdContent=null;closeModal('forward-modal');showToast('↪ Forwarded!');
 }
 
-// ── PIN MESSAGES ──
+// -- PIN MESSAGES --
 function startPinMsg(msgId,isGroup){
   pendingPinMsgId=msgId;pendingPinIsGroup=isGroup;
   // Small delay so context menu closes first
@@ -1586,7 +1745,7 @@ function scrollToGroupPinned(){
   if(el){el.closest('.msg-row').scrollIntoView({behavior:'smooth',block:'center'});}
 }
 
-// ── REACTIONS ──
+// -- REACTIONS --
 async function addRxn(msgId,emoji,isGroup){
   const{error}=await sb.from('message_reactions').insert({message_id:msgId,user_id:ME.id,emoji});
   if(error&&error.code==='23505')await sb.from('message_reactions').delete().eq('message_id',msgId).eq('user_id',ME.id).eq('emoji',emoji);
@@ -1611,7 +1770,7 @@ async function loadReactions(){
   });
 }
 
-// ── CONTEXT MENU ──
+// -- CONTEXT MENU --
 let lpTimer=null;
 function startLP(e,msgId,isMe,isGroup){lpTimer=setTimeout(()=>{const t=e.touches[0];showCtxMenu({clientX:t.clientX,clientY:t.clientY},msgId,isMe,isGroup);},500);}
 function clearLP(){clearTimeout(lpTimer);}
@@ -1636,7 +1795,7 @@ function showCtxMenu(e,msgId,isMe,isGroup){
 }
 function closeCtxMenu(){document.getElementById('ctx-menu')?.remove();}
 
-// ── MSG SEARCH ──
+// -- MSG SEARCH --
 function toggleMsgSearch(){
   const bar=document.getElementById('msg-search'),btn=document.getElementById('btn-search');
   const on=bar.classList.toggle('on');btn.classList.toggle('active',on);
@@ -1648,11 +1807,11 @@ function searchInChat(q){
   renderMsgs(loadedMsgs.filter(m=>m.content&&m.content.toLowerCase().includes(q.toLowerCase())));
 }
 
-// ── REPLY ──
+// -- REPLY --
 function startReply(id,text){replyTo={id,text};document.getElementById('reply-txt').textContent=text;document.getElementById('reply-strip').classList.add('on');document.getElementById('msg-input').focus();}
 function cancelReply(){replyTo=null;document.getElementById('reply-strip').classList.remove('on');}
 
-// ── EMOJI ──
+// -- EMOJI --
 function buildEmoji(pid,cat,setFn,insertFn){
   const p=document.getElementById(pid);
   p.innerHTML=`<div class="ep-cats">${Object.keys(EMOJIS).map(c=>`<button class="ep-cat ${c===cat?'on':''}" onclick="${setFn}('${c}')">${c}</button>`).join('')}</div><div class="ep-grid">${(EMOJIS[cat]||[]).map(e=>`<button class="ep-btn" onclick="${insertFn}('${e}')">${e}</button>`).join('')}</div>`;
@@ -1664,7 +1823,7 @@ function toggleGroupEmoji(){const p=document.getElementById('group-emoji-picker'
 function setGEC(c){groupEmojiCat=c;buildEmoji('group-emoji-picker',groupEmojiCat,'setGEC','insertGE');}
 function insertGE(e){const i=document.getElementById('group-msg-input');i.value+=e;i.focus();document.getElementById('group-emoji-picker').classList.remove('on');}
 
-// ── MENTION SYSTEM ──
+// -- MENTION SYSTEM --
 function handleMentionInput(textareaEl,dropId,isGroup){
   const val=textareaEl.value;
   const pos=textareaEl.selectionStart;
@@ -1714,7 +1873,7 @@ function updateMentionSel(dropId){
   document.querySelectorAll(`#${dropId} .mention-item`).forEach((el,i)=>el.classList.toggle('sel',i===mentionIndex));
 }
 
-// ── INPUT HELPERS ──
+// -- INPUT HELPERS --
 function handleKey(e){
   if(handleMentionKey(e,'mention-drop','false'))return;
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
@@ -1725,7 +1884,7 @@ function handleGroupKey(e){
 }
 function resizeInput(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
 
-// ── GROUPS ──
+// -- GROUPS --
 async function loadGroups(){
   // Load all groups I'm a member of (includes role)
   const{data:memberships}=await sb.from('group_members').select('group_id,role').eq('user_id',ME.id);
@@ -1806,6 +1965,9 @@ async function openGroupChat(groupId){
   if(groupMembersCache[ME.id])groupMembersCache[ME.id].role=currentGroupRole;
   groupMembers=Object.values(groupMembersCache);
   document.getElementById('gch-status').textContent=`${groupMembers.length} members`;
+  // Show announcement button for admins/owners
+  const announceBtn=document.getElementById('announce-btn');
+  if(announceBtn)announceBtn.style.display=(currentGroupRole==='owner'||currentGroupRole==='admin')?'flex':'none';
 
   document.getElementById('group-chat-empty').style.display='none';
   document.getElementById('active-group-chat').style.display='flex';
@@ -1966,7 +2128,7 @@ async function addMemberToGroup(uid,username){
   renderGroupRightPanel();
 }
 
-// ── GROUP SUBSCRIPTION ──
+// -- GROUP SUBSCRIPTION --
 function subscribeToGroup(groupId){
   if(groupChannel)sb.removeChannel(groupChannel);
   groupChannel=sb.channel(`group:${groupId}`);
@@ -1988,10 +2150,13 @@ function subscribeToGroup(groupId){
     document.querySelector(`[data-id="${payload.id}"]`)?.remove();
     loadedGroupMsgs=loadedGroupMsgs.filter(m=>m.id!==payload.id);
   });
+  groupChannel.on('broadcast',{event:'announcement'},({payload})=>{
+    if(payload?.from!==ME.username)handleGroupAnnouncement(payload);
+  });
   groupChannel.subscribe();
 }
 
-// ── GROUP MESSAGES ──
+// -- GROUP MESSAGES --
 async function loadGroupMsgs(){
   const{data}=await sb.from('group_messages').select('*').eq('group_id',currentGroup).order('created_at',{ascending:true}).limit(100);
   loadedGroupMsgs=data||[];
@@ -2016,7 +2181,7 @@ function appendGroupMsg(msg,senderInfo){
   scrollBottom('group-msgs',true);
 }
 
-// ── SEND GROUP MESSAGE ──
+// -- SEND GROUP MESSAGE --
 async function sendGroupMsg(){
   const inp=document.getElementById('group-msg-input');
   const text=inp.value.trim();
@@ -2063,7 +2228,7 @@ async function sendGroupMsg(){
   }
 }
 
-// ── DELETE GROUP MESSAGE ──
+// -- DELETE GROUP MESSAGE --
 async function deleteGroupMsg(msgId){
   const{error}=await sb.from('group_messages').delete().eq('id',msgId);
   if(error){showToast('❌ '+error.message);return;}
@@ -2073,7 +2238,7 @@ async function deleteGroupMsg(msgId){
   if(groupChannel)groupChannel.send({type:'broadcast',event:'del',payload:{id:msgId}});
 }
 
-// ── CREATE GROUP ──
+// -- CREATE GROUP --
 let selectedGroupMembers=[];
 
 let pendingGroupIconFile=null;
@@ -2179,7 +2344,7 @@ function removeFromSelected(uid){
   document.getElementById('sel-'+uid)?.remove();
 }
 
-// ── GROUP INFO MODAL ──
+// -- GROUP INFO MODAL --
 async function openGroupInfo(){
   const group=currentGroupData;
   const membersList=Object.values(groupMembersCache);
@@ -2216,6 +2381,12 @@ async function openGroupInfo(){
         ${isAdmin&&m.id!==ME.id&&m.role!=='owner'?`<button style="background:none;border:none;color:var(--t4);cursor:pointer;font-size:16px;padding:2px 6px" onclick="showMemberMenu(event,'${m.id}','${m.username||'?'}','${m.role||'member'}')">⋮</button>`:''}
       </div>`).join('')}
     ${isAdmin?`<button class="mbtn sec" style="margin-top:12px" onclick="closeModal('group-info-modal');openAddMemberModal()">➕ Add Member</button>`:''}
+    ${isOwner?`
+      <div style="margin-top:12px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--t4);margin-bottom:6px;font-family:var(--mono)">INVITE LINK</div>
+        ${group?.invite_code?`<div class="invite-link-box" onclick="copyInviteLink('${group.invite_code}')">https://abrarns.github.io/Nexus-Chat/?join=${group.invite_code}<br><span style="color:var(--t4);font-size:9px">tap to copy</span></div>`:``}
+        <button class="mbtn sec" style="margin-bottom:8px" onclick="generateAndShowInvite()">🔗 ${group?.invite_code?'Regenerate':'Generate'} Invite Link</button>
+      </div>`:''}
     <button class="mbtn danger" style="margin-top:4px" onclick="closeModal('group-info-modal');leaveGroup()">🚪 Leave Group</button>`;
   openModal('group-info-modal');
 }
@@ -2259,7 +2430,7 @@ async function saveGroupInfo(){
   loadGroups();
 }
 
-// ── USERS ──
+// -- USERS --
 async function loadUsers(){
   const{data}=await sb.from('profiles').select('*').neq('id',ME.id).limit(60);
   allUsers=(data||[]).filter(u=>!blockedUsers.has(u.id));
@@ -2278,12 +2449,22 @@ function renderPeople(users){
       </div>
       <div class="pcard-name">@${u.username}</div>
       <div class="pcard-bio">${u.bio||'New to NEXUS 👋'}</div>
-      <button class="pcard-btn" onclick="chatWith('${u.id}')">💬 Message</button>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <button class="pcard-btn" onclick="chatWith('${u.id}')">💬</button>
+        <button class="follow-btn ${myFollowing.has(u.id)?'following':''}" style="flex:1;padding:7px 10px" onclick="toggleFollow('${u.id}',this)">${myFollowing.has(u.id)?'Following':'Follow'}</button>
+      </div>
     </div>`;
   }).join('');
 }
 
-function searchUsers(v){if(!v.trim()){renderPeople(allUsers);return;}renderPeople(allUsers.filter(u=>u.username.toLowerCase().includes(v.toLowerCase())));}
+function searchUsers(v){
+  if(!v.trim()){
+    if(peopleTab==='all')renderPeople(allUsers);
+    else switchPeopleTab(peopleTab);
+    return;
+  }
+  renderPeople(allUsers.filter(u=>u.username.toLowerCase().includes(v.toLowerCase())));
+}
 
 async function chatWith(uid){setView('chat',document.getElementById('nav-chat'));await openChat(uid);loadConvos();}
 
@@ -2298,7 +2479,7 @@ function ncSearch(v){
     </div>`).join('')||'<div style="padding:12px;color:var(--t4);font-family:var(--mono);font-size:12px">No users found</div>';
 }
 
-// ── RIGHT PANEL ──
+// -- RIGHT PANEL --
 function renderRightPanel(p){
   const on=onlineUsers.has(p.id);
   document.getElementById('rp-body').innerHTML=`
@@ -2311,7 +2492,7 @@ function renderRightPanel(p){
     <button class="rp-btn cyan" onclick="viewProfile('${p.id}')">◎ View Profile</button>`;
 }
 
-// ── VIEW PROFILE ──
+// -- VIEW PROFILE --
 async function viewProfile(uid){
   if(!uid)return;
   await loadBlocks();
@@ -2329,28 +2510,47 @@ async function viewProfile(uid){
       <div style="font-size:11.5px;font-family:var(--mono);margin-bottom:10px;color:${on?'var(--green)':'var(--t4)'}">${on?'● Online':'○ Offline'}</div>
       <div style="font-size:13px;color:var(--t2);line-height:1.7;max-width:260px;margin:0 auto 16px">${p.bio||'No bio yet.'}</div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
-      <div style="background:var(--card2);border-radius:var(--r12);padding:14px;text-align:center"><div style="font-size:22px;font-weight:800">${posts?.length||0}</div><div style="font-size:9px;color:var(--t4);font-family:var(--mono)">POSTS</div></div>
-      <div style="background:var(--card2);border-radius:var(--r12);padding:14px;text-align:center"><div style="font-size:16px;font-weight:700">${new Date(p.created_at||Date.now()).toLocaleDateString('en',{month:'short',year:'numeric'})}</div><div style="font-size:9px;color:var(--t4);font-family:var(--mono)">JOINED</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:18px">
+      <div style="background:var(--card2);border-radius:var(--r12);padding:12px 8px;text-align:center"><div style="font-size:20px;font-weight:800">${posts?.length||0}</div><div style="font-size:9px;color:var(--t4);font-family:var(--mono)">POSTS</div></div>
+      <div style="background:var(--card2);border-radius:var(--r12);padding:12px 8px;text-align:center"><div style="font-size:20px;font-weight:800" id="vm-followers">-</div><div style="font-size:9px;color:var(--t4);font-family:var(--mono)">FOLLOWERS</div></div>
+      <div style="background:var(--card2);border-radius:var(--r12);padding:12px 8px;text-align:center"><div style="font-size:20px;font-weight:800" id="vm-following">-</div><div style="font-size:9px;color:var(--t4);font-family:var(--mono)">FOLLOWING</div></div>
     </div>
     ${uid!==ME.id?`
-      <button onclick="chatWith('${uid}');closeModal('user-modal')" class="mbtn prim">💬 SEND MESSAGE</button>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button onclick="chatWith('${uid}');closeModal('user-modal')" class="mbtn prim" style="flex:1;margin-bottom:0">💬 Message</button>
+        <button class="follow-btn ${myFollowing.has(uid)?'following':''}" id="fp-follow-btn" onclick="toggleFollow('${uid}',this)" style="flex-shrink:0">${myFollowing.has(uid)?'Following':'Follow'}</button>
+      </div>
       ${blockedUsers.has(uid)
         ?`<button onclick="unblockUser('${uid}','${p.username}')" class="mbtn sec" style="color:var(--green)">✅ Unblock @${p.username}</button>`
         :`<button onclick="blockUser('${uid}','${p.username}')" class="mbtn danger">🚫 Block @${p.username}</button>`
       }`:''}`;
+  recordProfileVisit(uid);
   openModal('user-modal');
+  // Load follower/following counts async
+  // Load follower/following counts
+  sb.from('follows').select('*',{count:'exact',head:true}).eq('following_id',uid).then(({count:followers})=>{
+    const fe=document.getElementById('vm-followers');
+    if(fe)fe.textContent=followers||0;
+  });
+  sb.from('follows').select('*',{count:'exact',head:true}).eq('follower_id',uid).then(({count:following})=>{
+    const fg=document.getElementById('vm-following');
+    if(fg)fg.textContent=following||0;
+  });
 }
 
-// ── FEED ──
+// -- FEED --
 let allPosts=[];
 async function loadFeed(){
-  const[{data:posts},{data:likes}]=await Promise.all([
+  const[{data:posts},{data:likes},{data:commentCounts}]=await Promise.all([
     sb.from('posts').select('*,profiles(username,avatar_url)').order('created_at',{ascending:false}).limit(50),
-    sb.from('post_likes').select('post_id').eq('user_id',ME.id)
+    sb.from('post_likes').select('post_id').eq('user_id',ME.id),
+    sb.from('post_comments').select('post_id')
   ]);
   myLikedPosts=new Set((likes||[]).map(l=>l.post_id));
-  allPosts=posts||[];renderFeed(allPosts);
+  const cmtCount={};
+  (commentCounts||[]).forEach(c=>{cmtCount[c.post_id]=(cmtCount[c.post_id]||0)+1;});
+  allPosts=(posts||[]).map(p=>({...p,comment_count:cmtCount[p.id]||0}));
+  renderFeed(allPosts);
 }
 
 function renderFeed(posts){
@@ -2367,7 +2567,7 @@ function renderFeed(posts){
       ${post.content?`<div class="post-body">${esc(post.content)}</div>`:''}
       <div class="post-actions">
         <button class="pa ${liked?'liked':''}" onclick="likePost('${post.id}',this)" ${liked?'disabled':''}>${liked?'❤️':'♡'} ${post.likes||0}</button>
-        <button class="pa" onclick="chatWith('${post.user_id}')">💬 Reply</button>
+        <button class="pa" onclick="openComments('${post.id}')">💬 ${post.comment_count||0}</button>
         ${post.user_id===ME.id?`<button class="pa" style="color:var(--pink)" onclick="deletePost('${post.id}')">🗑 Delete</button>`:''}
       </div>
     </div>`;
@@ -2392,7 +2592,7 @@ async function likePost(id,btn){
 
 async function deletePost(id){await sb.from('posts').delete().eq('id',id);showToast('🗑 Deleted');loadFeed();}
 
-// ── NOTIFICATIONS ──
+// -- NOTIFICATIONS --
 function addNotif(profile,text){
   notifs.unshift({profile,text,t:'just now',read:false});
   if(notifs.length>30)notifs.pop();
@@ -2416,7 +2616,489 @@ function renderNotifs(){
 
 function markRead(){notifs.forEach(n=>n.read=true);renderNotifs();}
 
-// ── ENABLE NOTIFICATIONS ──
+// -------------------------------------------
+// -- NEXUS v5 NEW FEATURES --
+// -------------------------------------------
+
+// -- GLOBAL SEARCH --
+let searchTab='users';
+function switchSearchTab(tab){
+  searchTab=tab;
+  document.getElementById('stab-users').classList.toggle('on',tab==='users');
+  document.getElementById('stab-posts').classList.toggle('on',tab==='posts');
+  globalSearch(document.getElementById('search-modal-input').value);
+}
+
+async function globalSearch(q){
+  const el=document.getElementById('search-results');
+  if(!q.trim()){el.innerHTML='<div style="padding:16px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">Start typing to search...</div>';return;}
+  if(searchTab==='users'){
+    const{data}=await sb.from('profiles').select('*').ilike('username','%'+q+'%').limit(20);
+    if(!data?.length){el.innerHTML='<div style="padding:16px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No users found</div>';return;}
+    el.innerHTML=data.map(u=>{
+      const on=onlineUsers.has(u.id);
+      const isFollowing=myFollowing.has(u.id);
+      return`<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);transition:background .15s;cursor:pointer" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''">
+        <div onclick="closeModal('search-modal');viewProfile('${u.id}')" style="display:flex;align-items:center;gap:10px;flex:1">
+          <div style="width:40px;height:40px;border-radius:50%;background:${uc(u.username)};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;border:2px solid ${on?'var(--green)':'transparent'}">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:u.username[0].toUpperCase()}</div>
+          <div><div style="font-size:13.5px;font-weight:600">@${u.username}</div><div style="font-size:11px;color:var(--t4);font-family:var(--mono)">${u.bio||'No bio'}</div></div>
+        </div>
+        ${u.id!==ME.id?`<button class="follow-btn ${isFollowing?'following':''}" onclick="toggleFollow('${u.id}',this)">${isFollowing?'Following':'Follow'}</button>`:''}
+      </div>`;
+    }).join('');
+  }else{
+    const{data}=await sb.from('posts').select('*,profiles(username,avatar_url)').ilike('content','%'+q+'%').order('created_at',{ascending:false}).limit(20);
+    if(!data?.length){el.innerHTML='<div style="padding:16px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No posts found</div>';return;}
+    el.innerHTML=data.map(p=>{
+      const pf=p.profiles||{};
+      return`<div style="background:var(--card2);border-radius:var(--r12);padding:12px;margin-bottom:8px;cursor:pointer" onclick="closeModal('search-modal');setView('feed',document.getElementById('nav-feed'))">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="width:28px;height:28px;border-radius:50%;background:${uc(pf.username||'?')};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${pf.avatar_url?`<img src="${pf.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:( pf.username||'?')[0].toUpperCase()}</div>
+          <span style="font-size:12px;font-weight:600">@${pf.username||'?'}</span>
+          <span style="font-size:10px;color:var(--t4);font-family:var(--mono);margin-left:auto">${timeAgo(p.created_at)}</span>
+        </div>
+        <div style="font-size:13px;color:var(--t2);line-height:1.6">${esc((p.content||'').slice(0,120))}${p.content?.length>120?'…':''}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// -- PEOPLE TABS --
+let peopleTab='all';
+async function switchPeopleTab(tab){
+  peopleTab=tab;
+  ['all','following','followers','visitors'].forEach(t=>{
+    document.getElementById('ptab-'+t)?.classList.toggle('on',t===tab);
+  });
+  const search=document.getElementById('people-search-input')?.value||'';
+  if(search){searchUsers(search);return;}
+  if(tab==='all'){loadUsers();}
+  else if(tab==='following'){loadFollowingList();}
+  else if(tab==='followers'){loadFollowersList();}
+  else if(tab==='visitors'){loadProfileVisitors();}
+}
+
+async function loadFollowingList(){
+  const{data}=await sb.from('follows').select('following_id,profiles!follows_following_id_fkey(*)').eq('follower_id',ME.id);
+  const users=(data||[]).map(f=>f.profiles).filter(Boolean);
+  renderPeople(users);
+}
+
+async function loadFollowersList(){
+  const{data}=await sb.from('follows').select('follower_id,profiles!follows_follower_id_fkey(*)').eq('following_id',ME.id);
+  const users=(data||[]).map(f=>f.profiles).filter(Boolean);
+  renderPeople(users);
+}
+
+async function loadProfileVisitors(){
+  const{data}=await sb.from('profile_visits').select('visitor_id,profiles!profile_visits_visitor_id_fkey(*)').eq('visited_id',ME.id).order('created_at',{ascending:false}).limit(30);
+  const seen=new Set();
+  const users=(data||[]).map(f=>f.profiles).filter(p=>p&&!seen.has(p.id)&&seen.add(p.id));
+  if(!users.length){
+    document.getElementById('people-grid').innerHTML='<div style="color:var(--t4);font-family:var(--mono);font-size:13px;padding:20px 0;grid-column:1/-1">No visitors yet</div>';
+    return;
+  }
+  renderPeople(users);
+}
+
+// -- FOLLOW SYSTEM --
+let myFollowing=new Set();
+
+async function loadFollowing(){
+  const{data}=await sb.from('follows').select('following_id').eq('follower_id',ME.id);
+  myFollowing=new Set((data||[]).map(f=>f.following_id));
+}
+
+async function toggleFollow(uid,btn){
+  if(myFollowing.has(uid)){
+    await sb.from('follows').delete().eq('follower_id',ME.id).eq('following_id',uid);
+    myFollowing.delete(uid);
+    btn.textContent='Follow';btn.classList.remove('following');
+    showToast('Unfollowed');
+  }else{
+    await sb.from('follows').insert({follower_id:ME.id,following_id:uid});
+    myFollowing.add(uid);
+    btn.textContent='Following';btn.classList.add('following');
+    showToast('✅ Following!');
+  }
+}
+
+// -- STORIES --
+let storyImgFile=null,currentStories=[],currentStoryIdx=0,currentUserStories=[],currentUserStoryIdx=0,storyTimer=null;
+
+function previewStoryMedia(inp){
+  const file=inp.files[0];if(!file)return;
+  storyImgFile=file;
+  const url=URL.createObjectURL(file);
+  document.getElementById('story-img-preview').innerHTML=`<img src="${url}" style="max-width:100%;max-height:140px;border-radius:var(--r12);object-fit:cover">`;
+}
+function previewStoryImg(inp){previewStoryMedia(inp);}
+
+async function createStory(){
+  const text=document.getElementById('story-text').value.trim();
+  if(!text&&!storyImgFile){showToast('⚠️ Add text or photo');return;}
+  let media_url=null,media_type=null;
+  if(storyImgFile){
+    showToast('📤 Uploading...');
+    // Compress hard — 600x600 max, 0.55 quality = ~50-80KB per story
+    const blob=await compressStory(storyImgFile);
+    const path=`${ME.id}_${Date.now()}.jpg`;
+    const{error:upErr}=await sb.storage.from('stories').upload(path,blob,{upsert:false,contentType:'image/jpeg'});
+    if(upErr){
+      showToast('❌ Upload failed: '+upErr.message);return;
+    }
+    const{data:{publicUrl}}=sb.storage.from('stories').getPublicUrl(path);
+    media_url=publicUrl+'?t='+Date.now();media_type='image';
+    storyImgFile=null;
+  }
+  const{error}=await sb.from('stories').insert({user_id:ME.id,content:text||null,media_url,media_type});
+  if(error){showToast('❌ '+error.message);return;}
+  document.getElementById('story-text').value='';
+  document.getElementById('story-img-preview').innerHTML='📷';
+  document.getElementById('story-img-input').value='';
+  closeModal('story-modal');
+  showToast('✅ Story shared!');
+  loadStories();
+}
+
+async function loadStories(){
+  const bar=document.getElementById('stories-bar');
+  if(!bar)return;
+  const byUser={};
+  bar.innerHTML='';
+
+  // Add story button - always visible
+  const addBtn=document.createElement('div');
+  addBtn.className='story-item';
+  addBtn.innerHTML=`<div style="position:relative">
+    <div class="story-ring mine">
+      <div class="story-av" style="background:${uc(ME.username||'?')}">${ME.avatar_url?`<img src="${ME.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%">`:`<span>${(ME.username||'?')[0].toUpperCase()}</span>`}</div>
+    </div>
+    <div class="story-add" id="story-add-icon" onclick="event.stopPropagation();openModal('story-modal')" style="cursor:pointer;position:absolute;bottom:0;right:0">+</div>
+  </div>
+  <div class="story-name" id="story-add-label">My Story</div>`;
+  addBtn.id='my-story-btn';
+  addBtn.onclick=()=>openModal('story-modal');
+  bar.appendChild(addBtn);
+
+  // Only load stories from people I follow + myself
+  const{data:followData}=await sb.from('follows').select('following_id').eq('follower_id',ME.id);
+  const followingIds=[...(followData||[]).map(f=>f.following_id),ME.id];
+
+  const{data:storiesRaw}=await sb.from('stories').select('*').gt('expires_at',new Date().toISOString()).in('user_id',followingIds).order('created_at',{ascending:false}).limit(50);
+  if(!storiesRaw||!storiesRaw.length)return;
+
+  const uids=[...new Set(storiesRaw.map(s=>s.user_id))];
+  const{data:profs}=await sb.from('profiles').select('id,username,avatar_url').in('id',uids);
+  const profMap={};(profs||[]).forEach(p=>profMap[p.id]=p);
+
+  storiesRaw.forEach(s=>{
+    if(!byUser[s.user_id])byUser[s.user_id]={profile:profMap[s.user_id]||{username:'?',avatar_url:''},stories:[]};
+    byUser[s.user_id].stories.push(s);
+  });
+  // Update my story button if I have a story
+  const hasMyStory=!!byUser[ME.id];
+  const myStoryBtn=document.getElementById('my-story-btn');
+  const storyGroups=Object.values(byUser);
+  if(hasMyStory&&myStoryBtn){
+    const myIdx=Object.keys(byUser).indexOf(ME.id);
+    // Ring tap = view story, + button tap = add new story
+    myStoryBtn.onclick=()=>openStoryViewer(storyGroups,myIdx>=0?myIdx:0);
+    // keep + button visible so they can always add more
+  }
+
+  // Add other users' stories
+  Object.entries(byUser).forEach(([uid,group])=>{
+    if(uid===ME.id)return; // already shown above
+    const pf=group.profile;
+    if(!pf)return;
+    const item=document.createElement('div');
+    item.className='story-item';
+    const allGroups2=[...storyGroups];
+    const uidIdx=Object.keys(byUser).indexOf(uid);
+    item.onclick=()=>openStoryViewer(allGroups2,uidIdx);
+    item.innerHTML=`<div class="story-ring">
+      <div class="story-av" style="background:${uc(pf.username||'?')}">${pf.avatar_url?`<img src="${pf.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%">`:`<span>${(pf.username||'?')[0].toUpperCase()}</span>`}</div>
+    </div>
+    <div class="story-name">@${pf.username||'?'}</div>`;
+    bar.appendChild(item);
+  });
+  currentStories=storyGroups;
+}
+
+function openStoryViewer(stories,userIdx){
+  currentStories=stories;currentStoryIdx=userIdx;currentUserStoryIdx=0;
+  document.getElementById('story-viewer').classList.add('on');
+  showCurrentStory();
+}
+
+function closeStoryViewer(){
+  document.getElementById('story-viewer').classList.remove('on');
+  clearTimeout(storyTimer);
+}
+
+function showCurrentStory(){
+  clearTimeout(storyTimer);
+  const userGroup=currentStories[currentStoryIdx];
+  if(!userGroup){closeStoryViewer();return;}
+  const story=userGroup.stories[currentUserStoryIdx];
+  if(!story){closeStoryViewer();return;}
+  const pf=userGroup.profile||{};
+  // Update header
+  const avEl=document.getElementById('sv-av');
+  avEl.style.background=uc(pf.username||'?');
+  avEl.style.width='36px';avEl.style.height='36px';avEl.style.borderRadius='50%';avEl.style.overflow='hidden';avEl.style.display='flex';avEl.style.alignItems='center';avEl.style.justifyContent='center';avEl.style.fontSize='14px';avEl.style.fontWeight='700';
+  avEl.innerHTML=pf.avatar_url?`<img src="${pf.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:`<span>${(pf.username||'?')[0].toUpperCase()}</span>`;
+  document.getElementById('sv-name').textContent='@'+(pf.username||'?');
+  document.getElementById('sv-time').textContent=timeAgo(story.created_at);
+  // Progress bars
+  const bar=document.getElementById('story-progress-bar');
+  bar.innerHTML=userGroup.stories.map((_,i)=>`<div class="story-progress-seg"><div class="story-progress-fill" id="spf-${i}" style="width:${i<currentUserStoryIdx?'100%':i===currentUserStoryIdx?'0%':'0%'}"></div></div>`).join('');
+  // Content
+  const content=document.getElementById('sv-content');
+  const tl=content.querySelector('.story-tap-left'),tr=content.querySelector('.story-tap-right');
+  content.innerHTML='';
+  if(story.media_url){
+    const img=document.createElement('img');
+    img.className='story-img';
+    img.src=story.media_url;
+    img.style.cssText='max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px';
+    content.appendChild(img);
+  }
+  if(story.content){
+    const txt=document.createElement('div');txt.className='story-text-content';txt.textContent=story.content;content.appendChild(txt);
+  }
+  // Re-add tap areas
+  const newTL=document.createElement('div');newTL.className='story-tap-left';newTL.onclick=prevStory;
+  const newTR=document.createElement('div');newTR.className='story-tap-right';newTR.onclick=nextStory;
+  content.appendChild(newTL);content.appendChild(newTR);
+  // Animate progress
+  const fill=document.getElementById('spf-'+currentUserStoryIdx);
+  if(fill){setTimeout(()=>{fill.style.transition='width 5s linear';fill.style.width='100%';},50);}
+  // Auto advance
+  storyTimer=setTimeout(nextStory,5000);
+  // Record view
+  if(story.user_id!==ME.id){
+    sb.from('story_views').upsert({story_id:story.id,user_id:ME.id}).catch(()=>{});
+  }
+  // Show delete button only for own stories
+  const delBtn=document.getElementById('sv-delete-btn');
+  if(delBtn)delBtn.style.display=String(story.user_id)===String(ME.id)?'block':'none';
+}
+
+async function deleteCurrentStory(){
+  const userGroup=currentStories[currentStoryIdx];
+  if(!userGroup)return;
+  const story=userGroup.stories[currentUserStoryIdx];
+  if(!story||String(story.user_id)!==String(ME.id))return;
+  const{error}=await sb.from('stories').delete().eq('id',story.id);
+  if(error){showToast('❌ '+error.message);return;}
+  showToast('🗑 Story deleted');
+  closeStoryViewer();
+  loadStories();
+}
+
+function nextStory(){
+  const userGroup=currentStories[currentStoryIdx];
+  if(!userGroup)return closeStoryViewer();
+  if(currentUserStoryIdx<userGroup.stories.length-1){currentUserStoryIdx++;showCurrentStory();}
+  else if(currentStoryIdx<currentStories.length-1){currentStoryIdx++;currentUserStoryIdx=0;showCurrentStory();}
+  else closeStoryViewer();
+}
+
+function prevStory(){
+  if(currentUserStoryIdx>0){currentUserStoryIdx--;showCurrentStory();}
+  else if(currentStoryIdx>0){currentStoryIdx--;currentUserStoryIdx=0;showCurrentStory();}
+}
+
+// -- COMMENTS --
+async function openComments(postId){
+  const{data:post}=await sb.from('posts').select('*,profiles(username,avatar_url)').eq('id',postId).single();
+  const{data:comments}=await sb.from('post_comments').select('*,profiles(username,avatar_url)').eq('post_id',postId).order('created_at',{ascending:true});
+  const pf=post?.profiles||{};
+  document.getElementById('comments-modal-body').innerHTML=`
+    <div class="modal-x" onclick="closeModal('comments-modal')">✕</div>
+    <div class="modal-title">💬 Comments</div>
+    <div class="post-card" style="margin-bottom:16px">
+      <div class="post-head">
+        <div class="post-av" style="background:${uc(pf.username||'?')}">${pf.avatar_url?`<img src="${pf.avatar_url}">`:`<span>${(pf.username||'?')[0].toUpperCase()}</span>`}</div>
+        <div><div class="post-name">@${pf.username||'?'}</div><div class="post-time">${timeAgo(post?.created_at||'')}</div></div>
+      </div>
+      ${post?.content?`<div class="post-body">${esc(post.content)}</div>`:''}
+    </div>
+    <div id="comments-list">
+      ${(comments||[]).map(cm=>{
+        const cu=cm.profiles||{};
+        return`<div class="comment-item">
+          <div class="comment-av" style="background:${uc(cu.username||'?')}">${cu.avatar_url?`<img src="${cu.avatar_url}">`:`<span>${(cu.username||'?')[0].toUpperCase()}</span>`}</div>
+          <div class="comment-body">
+            <div class="comment-name">@${cu.username||'?'}</div>
+            <div class="comment-text">${esc(cm.content)}</div>
+            <div class="comment-time">${timeAgo(cm.created_at)}</div>
+          </div>
+          ${cm.user_id===ME.id?`<button style="background:none;border:none;color:var(--pink);cursor:pointer;font-size:13px;padding:4px" onclick="deleteComment('${cm.id}','${postId}')">🗑</button>`:''}
+        </div>`;
+      }).join('')||'<div style="padding:16px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No comments yet — be first!</div>'}
+    </div>
+    <div class="comment-input-row">
+      <div style="width:28px;height:28px;border-radius:50%;background:${uc(ME.username)};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${ME.avatar_url?`<img src="${ME.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:ME.username[0].toUpperCase()}</div>
+      <input class="comment-input" id="comment-input-${postId}" placeholder="Write a comment..." onkeydown="if(event.key==='Enter')postComment('${postId}')">
+      <button class="comment-send" onclick="postComment('${postId}')">➤</button>
+    </div>`;
+  openModal('comments-modal');
+}
+
+async function postComment(postId){
+  const inp=document.getElementById('comment-input-'+postId);
+  const text=inp.value.trim();if(!text)return;
+  const{error}=await sb.from('post_comments').insert({post_id:postId,user_id:ME.id,content:text});
+  if(error){showToast('❌ '+error.message);return;}
+  inp.value='';
+  openComments(postId); // refresh
+  loadFeed(); // update comment count
+}
+
+async function deleteComment(commentId,postId){
+  await sb.from('post_comments').delete().eq('id',commentId);
+  openComments(postId);
+  loadFeed();
+}
+
+function copyInviteLink(code){
+  const link=`https://abrarns.github.io/Nexus-Chat/?join=${code}`;
+  navigator.clipboard.writeText(link).then(()=>showToast('🔗 Link copied!')).catch(()=>showToast('🔗 '+link));
+}
+async function generateAndShowInvite(){
+  const link=await generateInviteLink();
+  openGroupInfo(); // refresh to show the link
+}
+
+// -- GROUP INVITE LINK --
+async function generateInviteLink(){
+  const code=Math.random().toString(36).slice(2,10).toUpperCase();
+  await sb.from('group_chats').update({invite_code:code}).eq('id',currentGroup);
+  currentGroupData={...currentGroupData,invite_code:code};
+  const link=`https://abrarns.github.io/Nexus-Chat/?join=${code}`;
+  showToast('✅ Invite link created!');
+  return link;
+}
+
+async function checkInviteCode(){
+  const params=new URLSearchParams(window.location.search);
+  const code=params.get('join');
+  if(!code||!ME)return;
+  const{data:group}=await sb.from('group_chats').select('*').eq('invite_code',code).single();
+  if(!group){showToast('❌ Invalid invite link');return;}
+  await sb.rpc('add_group_member',{p_group_id:group.id,p_user_id:ME.id,p_role:'member'}).catch(()=>{});
+  showToast(`✅ Joined ${group.name}!`);
+  await loadGroups();
+  setView('groups',document.getElementById('nav-groups'));
+  openGroupChat(group.id);
+  // clean URL
+  window.history.replaceState({},document.title,window.location.pathname);
+}
+
+// -- PROFILE VISITS --
+async function recordProfileVisit(uid){
+  if(uid===ME.id)return;
+  await sb.from('profile_visits').insert({visitor_id:ME.id,visited_id:uid}).catch(()=>{});
+}
+
+// -- GROUP ANNOUNCEMENTS --
+let currentAnnouncement=null;
+
+function openAnnouncement(){
+  const msg=prompt('📢 Enter announcement for all group members:');
+  if(!msg?.trim())return;
+  currentAnnouncement=msg;
+  // Show in announcement bar
+  document.getElementById('announcement-bar').style.display='block';
+  document.getElementById('announcement-text').textContent=msg;
+  // Broadcast to all group members
+  if(groupChannel)groupChannel.send({type:'broadcast',event:'announcement',payload:{text:msg,from:ME.username}});
+  // Also store as special group message
+  sb.from('group_messages').insert({group_id:currentGroup,sender_id:ME.id,content:`📢 ANNOUNCEMENT: ${msg}`});
+  showToast('📢 Announcement sent!');
+}
+
+// Listen for announcements in subscribeToGroup
+function handleGroupAnnouncement(payload){
+  if(!payload?.text)return;
+  document.getElementById('announcement-bar').style.display='block';
+  document.getElementById('announcement-text').textContent=`${payload.from}: ${payload.text}`;
+  addNotif({username:payload.from||'?'},`announced: ${payload.text.slice(0,40)}`);
+}
+
+// -- DISAPPEARING MESSAGES --
+let disappearingMode=false; // false=off, or duration in ms
+
+function toggleDisappearing(){
+  const btn=document.getElementById('btn-disappear');
+  if(disappearingMode){
+    disappearingMode=false;
+    btn?.classList.remove('active');
+    showToast('Disappearing messages off');
+    return;
+  }
+  document.getElementById('ctx-menu')?.remove();
+  const menu=document.createElement('div');
+  menu.className='ctx-menu';menu.id='ctx-menu';
+  const opts=[['1 Hour',3600000],['24 Hours',86400000],['7 Days',604800000]];
+  menu.innerHTML=opts.map(o=>`<div class="ctx-item" onclick="setDisappear(${o[1]},'${o[0]}')">${o[0]}</div>`).join('');
+  const btnEl=document.getElementById('btn-disappear');
+  const r=btnEl?.getBoundingClientRect()||{left:100,bottom:60};
+  menu.style.left=Math.min(r.left,window.innerWidth-180)+'px';
+  menu.style.top=(r.bottom+4)+'px';
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
+}
+
+function setDisappear(ms,label){
+  disappearingMode=ms;
+  document.getElementById('btn-disappear')?.classList.add('active');
+  showToast('Disappearing: '+label);
+}
+
+// -- WHO VIEWED MY PROFILE --
+async function loadMyProfileVisitors(){
+  const{data}=await sb.from('profile_visits')
+    .select('visitor_id,created_at,profiles!profile_visits_visitor_id_fkey(username,avatar_url)')
+    .eq('visited_id',ME.id)
+    .order('created_at',{ascending:false})
+    .limit(20);
+  return(data||[]).map(v=>({...v.profiles,visited_at:v.created_at})).filter(Boolean);
+}
+
+async function openProfileVisitorsModal(){
+  closeModal('profile-modal');
+  const visitors=await loadMyProfileVisitors();
+  document.getElementById('privacy-modal-body').innerHTML=`
+    <div class="modal-x" onclick="closeModal('privacy-modal')">✕</div>
+    <div class="modal-title">👁 Who Viewed Your Profile</div>
+    <div class="modal-sub">${visitors.length} recent visitors</div>
+    ${visitors.length?visitors.map(v=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);background:var(--card2);margin-bottom:8px;cursor:pointer" onclick="closeModal('privacy-modal')">
+        <div style="width:38px;height:38px;border-radius:50%;background:${uc(v.username||'?')};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">${v.avatar_url?`<img src="${v.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:`<span>${(v.username||'?')[0].toUpperCase()}</span>`}</div>
+        <div style="flex:1"><div style="font-size:13.5px;font-weight:600">@${v.username||'?'}</div><div style="font-size:10px;color:var(--t4);font-family:var(--mono)">${timeAgo(v.visited_at)}</div></div>
+      </div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No visitors yet</div>'}`;
+  openModal('privacy-modal');
+}
+
+// -- DELETE ACCOUNT --
+async function deleteAccount(){
+  const inp=prompt('Type DELETE to confirm deleting your account permanently:');
+  if(inp!=='DELETE'){showToast('Cancelled');return;}
+  // Delete all user data
+  await sb.from('messages').delete().or(`sender_id.eq.${ME.id},receiver_id.eq.${ME.id}`);
+  await sb.from('posts').delete().eq('user_id',ME.id);
+  await sb.from('stories').delete().eq('user_id',ME.id);
+  await sb.from('profiles').delete().eq('id',ME.id);
+  await sb.auth.admin?.deleteUser(ME.id).catch(()=>{});
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// -- ENABLE NOTIFICATIONS --
 async function enableNotifications(){
   try{
     // Try native browser permission first
@@ -2456,26 +3138,22 @@ function checkNotifStatus(){
   else btn.textContent='🔔 Enable Notifications';
 }
 
-// ── ONESIGNAL PUSH ──
+// -- ONESIGNAL PUSH --
 async function sendPushToUser(toUserId,title,message){
+  // Calls Supabase Edge Function which securely holds the OneSignal API key
   try{
-    await fetch('https://onesignal.com/api/v1/notifications',{
+    await fetch(`${SURL}/functions/v1/send-push`,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        app_id:'45c5191c-f5f9-4868-827c-cd108aeed138',
-        target_channel:'push',
-        filters:[{field:'external_id',value:toUserId}],
-        headings:{en:title},
-        contents:{en:message},
-        small_icon:'ic_stat_onesignal_default',
-        large_icon:'/Nexus-Chat/icon-192.png',
-      })
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+SKEY
+      },
+      body:JSON.stringify({toUserId,title,message})
     });
   }catch(e){console.log('Push failed:',e);}
 }
 
-// ── FLOATING NOTIFICATION ──
+// -- FLOATING NOTIFICATION --
 let floatNotifSenderId=null,floatNotifTimer=null;
 function showFloatNotif(profile,text,senderId){
   floatNotifSenderId=senderId;
@@ -2507,11 +3185,11 @@ function floatNotifClick(){
 }
 function toggleNotifs(){const p=document.getElementById('notif-panel');p.classList.toggle('on');if(p.classList.contains('on'))renderNotifs();}
 
-// ── LIGHTBOX ──
+// -- LIGHTBOX --
 function openLbox(url){document.getElementById('lbox-img').src=url;document.getElementById('lbox').classList.add('on');}
 function closeLbox(){document.getElementById('lbox').classList.remove('on');}
 
-// ── NAV ──
+// -- NAV --
 function setView(id,el){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
   if(el)el.classList.add('on');
@@ -2519,7 +3197,7 @@ function setView(id,el){
   document.getElementById('view-groups').style.display=id==='groups'?'flex':'none';
   document.getElementById('view-people').classList.toggle('on',id==='people');
   document.getElementById('view-feed').classList.toggle('on',id==='feed');
-  if(id==='people')loadUsers();
+  if(id==='people'){peopleTab='all';switchPeopleTab('all');['all','following','followers','visitors'].forEach(t=>{document.getElementById('ptab-'+t)?.classList.toggle('on',t==='all');});}
   if(id==='feed')loadFeed();
   if(id==='groups')loadGroups();
   const map={chat:'bn-chat',groups:'bn-groups',people:'bn-people',feed:'bn-feed'};
@@ -2542,12 +3220,12 @@ function mobileBack(){
 
 function bnActive(id){document.querySelectorAll('.bn-btn').forEach(b=>b.classList.remove('on'));document.getElementById(id)?.classList.add('on');}
 
-// ── MODALS ──
+// -- MODALS --
 function openModal(id){document.getElementById(id).classList.add('on');}
 function closeModal(id){document.getElementById(id).classList.remove('on');}
 function closeBg(e,id){if(e.target.id===id)closeModal(id);}
 
-// ── HELPERS ──
+// -- HELPERS --
 function uc(s){
   const p=['linear-gradient(135deg,#43e97b,#38f9d7)','linear-gradient(135deg,#667eea,#764ba2)','linear-gradient(135deg,#f093fb,#f5576c)','linear-gradient(135deg,#4facfe,#00f2fe)','linear-gradient(135deg,#f9ca24,#f0932b)','linear-gradient(135deg,#fd746c,#ff9068)','linear-gradient(135deg,#a18cd1,#fbc2eb)','linear-gradient(135deg,#00c6ff,#0072ff)'];
   let h=0;for(const c of(s||'?'))h=(h*31+c.charCodeAt(0))&0xffff;return p[h%p.length];
@@ -2575,7 +3253,7 @@ document.head.appendChild(style);
 
 setTimeout(()=>{if(!document.getElementById('loading').classList.contains('hide'))showAuth();},5000);
 
-// ── PWA INSTALL PROMPT ──
+// -- PWA INSTALL PROMPT --
 let deferredInstallPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
@@ -2588,7 +3266,7 @@ window.addEventListener('beforeinstallprompt',e=>{
   },3000);
 });
 
-// ── STATUS CYCLING ──
+// -- STATUS CYCLING --
 (function(){
   const msgs=['Initializing','Connecting','Loading profile','Almost ready'];
   let i=0;
@@ -2601,7 +3279,7 @@ window.addEventListener('beforeinstallprompt',e=>{
   },1200);
 })();
 
-// ── PARTICLE SYSTEM ──
+// -- PARTICLE SYSTEM --
 (function(){
   const canvas=document.getElementById('load-canvas');
   if(!canvas)return;
