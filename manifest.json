@@ -2,7 +2,7 @@
   "name": "NEXUS-CHAT",
   "short_name": "NEXUS",
   "description": "Real-time social network — message friends, post to feed, meet people.",
-  "start_url": "https://abrarns.github.io/Nexus-Chat/",
+  "start_url": "https://abrarns.github.io/Nexus-Chat/index.html",
   "scope": "https://abrarns.github.io/Nexus-Chat/",
   "display": "standalone",
   "orientation": "portrait",
@@ -28,10 +28,9 @@
       "name": "Messages",
       "short_name": "Chat",
       "description": "Open your messages",
-      "url": "https://abrarns.github.io/Nexus-Chat/",
+      "url": "https://abrarns.github.io/Nexus-Chat/index.html",
       "icons": [{ "src": "https://abrarns.github.io/Nexus-Chat/icon-192.png", "sizes": "192x192" }]
     }
   ],
-  "screenshots": [],
   "prefer_related_applications": false
 }
