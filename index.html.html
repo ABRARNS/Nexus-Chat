@@ -941,6 +941,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <button class="mbtn sec" onclick="closeModal('profile-modal');openBlockedList()">🚫 Blocked Users</button>
     <button class="mbtn sec" onclick="openProfileVisitorsModal()">👁 Who Viewed My Profile</button>
     <button class="mbtn sec" id="notif-enable-btn" onclick="enableNotifications()">🔔 Enable Notifications</button>
+    <button class="mbtn prim" onclick="inviteFriends()" style="background:linear-gradient(135deg,rgba(0,255,225,.15),rgba(181,77,255,.15));border-color:rgba(0,255,225,.3)">🔗 Invite Friends to NEXUS</button>
     <button class="mbtn danger" onclick="signOut()">🚪 Sign Out</button>
     <button class="mbtn danger" style="opacity:.5;font-size:11px;padding:8px" onclick="deleteAccount()">Delete Account</button>
   </div>
@@ -3069,6 +3070,22 @@ async function loadMyProfileVisitors(){
     .order('created_at',{ascending:false})
     .limit(20);
   return(data||[]).map(v=>({...v.profiles,visited_at:v.created_at})).filter(Boolean);
+}
+
+function inviteFriends(){
+  const text=`Hey! Join me on NEXUS-CHAT — a real social network with DMs, groups, stories and more 🚀
+https://abrarns.github.io/Nexus-Chat/index.html`;
+  if(navigator.share){
+    navigator.share({
+      title:'Join NEXUS-CHAT',
+      text:'Hey! Join me on NEXUS-CHAT — real social network with DMs, groups, stories and more 🚀',
+      url:'https://abrarns.github.io/Nexus-Chat/index.html'
+    }).catch(()=>{});
+  }else{
+    navigator.clipboard.writeText(text).then(()=>showToast('🔗 Invite link copied!')).catch(()=>{
+      prompt('Copy this and share it:',text);
+    });
+  }
 }
 
 async function openProfileVisitorsModal(){
