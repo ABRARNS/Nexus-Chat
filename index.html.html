@@ -1401,6 +1401,8 @@ async function openChat(uid){
   document.getElementById('active-chat').style.display='flex';
   document.getElementById('right-panel').style.display='flex';
   renderRightPanel(p);
+  loadDisappearMode(uid);
+  await deleteExpiredMessages(uid);
   await loadMsgs();
   loadPinnedMsg();
   highlightConvo(uid);
@@ -1474,6 +1476,14 @@ async function markReadDB(msgId){
 }
 
 // -- LOAD MESSAGES --
+async function deleteExpiredMessages(uid){
+  const now=new Date().toISOString();
+  try{
+    await sb.from('messages').delete().eq('sender_id',ME.id).eq('receiver_id',uid).lt('disappears_at',now).not('disappears_at','is',null);
+    await sb.from('messages').delete().eq('receiver_id',ME.id).eq('sender_id',uid).lt('disappears_at',now).not('disappears_at','is',null);
+  }catch(e){}
+}
+
 async function loadMsgs(){
   const{data}=await sb.from('messages')
     .select('*')
@@ -3035,10 +3045,23 @@ function handleGroupAnnouncement(payload){
 // -- DISAPPEARING MESSAGES --
 let disappearingMode=false; // false=off, or duration in ms
 
+function loadDisappearMode(chatId){
+  const saved=localStorage.getItem('disappear_'+chatId);
+  disappearingMode=saved?parseInt(saved):false;
+  const btn=document.getElementById('btn-disappear');
+  if(btn)btn.classList.toggle('active',!!disappearingMode);
+}
+
+function saveDisappearMode(chatId,ms){
+  if(ms)localStorage.setItem('disappear_'+chatId,ms);
+  else localStorage.removeItem('disappear_'+chatId);
+}
+
 function toggleDisappearing(){
   const btn=document.getElementById('btn-disappear');
   if(disappearingMode){
     disappearingMode=false;
+    saveDisappearMode(currentChat,false);
     btn?.classList.remove('active');
     showToast('Disappearing messages off');
     return;
@@ -3058,6 +3081,7 @@ function toggleDisappearing(){
 
 function setDisappear(ms,label){
   disappearingMode=ms;
+  saveDisappearMode(currentChat,ms);
   document.getElementById('btn-disappear')?.classList.add('active');
   showToast('Disappearing: '+label);
 }
