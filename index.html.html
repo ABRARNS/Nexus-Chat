@@ -1402,7 +1402,7 @@ async function openChat(uid){
   document.getElementById('right-panel').style.display='flex';
   renderRightPanel(p);
   loadDisappearMode(uid);
-  await deleteExpiredMessages(uid);
+  deleteExpiredMessages(uid); // non-blocking
   await loadMsgs();
   loadPinnedMsg();
   highlightConvo(uid);
@@ -1479,9 +1479,9 @@ async function markReadDB(msgId){
 async function deleteExpiredMessages(uid){
   const now=new Date().toISOString();
   try{
-    await sb.from('messages').delete().eq('sender_id',ME.id).eq('receiver_id',uid).lt('disappears_at',now).not('disappears_at','is',null);
-    await sb.from('messages').delete().eq('receiver_id',ME.id).eq('sender_id',uid).lt('disappears_at',now).not('disappears_at','is',null);
-  }catch(e){}
+    await sb.from('messages').delete().eq('sender_id',ME.id).eq('receiver_id',uid).lt('disappears_at',now).not('disappears_at','is',null).catch(()=>{});
+    await sb.from('messages').delete().eq('receiver_id',ME.id).eq('sender_id',uid).lt('disappears_at',now).not('disappears_at','is',null).catch(()=>{});
+  }catch(e){console.log('expire cleanup:',e);}
 }
 
 async function loadMsgs(){
