@@ -147,11 +147,23 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 @keyframes scan{0%{top:-2px;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
 
 /* AUTH */
-#auth{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 25% 60%,rgba(0,255,225,.05),transparent 50%),radial-gradient(ellipse at 75% 20%,rgba(181,77,255,.07),transparent 50%),var(--bg);z-index:1000}
-.auth-card{background:var(--card);border:1px solid var(--border2);border-radius:var(--r20);padding:44px;width:400px;max-width:94vw;box-shadow:var(--shadow-lg)}
-.auth-logo{font-size:28px;font-weight:800;letter-spacing:7px;color:var(--cyan);font-family:var(--mono);text-align:center;margin-bottom:6px}
-.auth-sub{text-align:center;font-size:11.5px;color:var(--t3);font-family:var(--mono);letter-spacing:2px;margin-bottom:32px}
-.auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg3);border-radius:var(--r12);padding:3px;gap:3px;margin-bottom:26px}
+#auth{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1000;overflow:hidden;background:var(--bg)}
+#auth-bg-canvas{position:absolute;inset:0;z-index:0;pointer-events:none}
+.auth-wrap{display:flex;align-items:stretch;width:900px;max-width:96vw;min-height:560px;z-index:1;border-radius:var(--r20);overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.6);border:1px solid var(--border2)}
+.auth-left{flex:1;background:linear-gradient(135deg,rgba(0,10,20,.95),rgba(10,5,25,.97));padding:48px 40px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.auth-left::before{content:'';position:absolute;top:-80px;left:-80px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,225,.08),transparent 70%);pointer-events:none}
+.auth-left::after{content:'';position:absolute;bottom:-60px;right:-60px;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(181,77,255,.1),transparent 70%);pointer-events:none}
+.auth-left-logo{font-size:32px;font-weight:900;letter-spacing:8px;color:var(--cyan);font-family:var(--mono);margin-bottom:6px}
+.auth-left-tag{font-size:11px;color:var(--t4);font-family:var(--mono);letter-spacing:2px;margin-bottom:40px}
+.auth-feature{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.auth-feature-icon{width:40px;height:40px;border-radius:var(--r12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.auth-feature-text{font-size:13.5px;font-weight:600;color:var(--t1);line-height:1.4}
+.auth-feature-sub{font-size:11px;color:var(--t4);font-family:var(--mono);margin-top:2px}
+.auth-left-footer{margin-top:auto;font-size:10px;color:var(--t4);font-family:var(--mono);letter-spacing:.5px}
+.auth-card{background:rgba(14,14,26,.98);padding:44px 40px;width:380px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--border)}
+.auth-logo{font-size:22px;font-weight:800;letter-spacing:6px;color:var(--cyan);font-family:var(--mono);text-align:center;margin-bottom:4px}
+.auth-sub{text-align:center;font-size:10px;color:var(--t4);font-family:var(--mono);letter-spacing:2px;margin-bottom:28px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg3);border-radius:var(--r12);padding:3px;gap:3px;margin-bottom:24px}
 .auth-tab{padding:9px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;border:none;background:none;color:var(--t3);font-family:var(--font);transition:all .2s}
 .auth-tab.on{background:var(--card2);color:var(--t1)}
 .auth-lbl{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;font-family:var(--mono)}
@@ -616,7 +628,9 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
   .nav{display:none}.right-panel{display:none}
   #bottom-nav{display:flex}.body{padding-bottom:58px}
   .top{padding:0 14px;gap:10px;height:54px}.top-logo{font-size:17px;letter-spacing:4px}.top-search{display:none}
-  .auth-card{padding:28px 20px;border-radius:var(--r20) var(--r20) 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;border-left:none;border-right:none;border-bottom:none}
+  .auth-wrap{flex-direction:column;border-radius:var(--r20) var(--r20) 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;min-height:auto}
+  .auth-left{display:none}
+  .auth-card{width:100%;padding:28px 20px 32px;border-left:none;border-top:1px solid var(--border)}
   #auth{align-items:flex-end}
   .overlay{padding:0;align-items:flex-end}.modal{border-radius:var(--r20) var(--r20) 0 0;width:100%;max-width:100%;max-height:90vh;padding:24px 20px 32px}
   .toast{bottom:72px}.notif-panel{right:8px;left:8px;width:auto;top:58px}
@@ -664,29 +678,60 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 </div>
 
 <div id="auth" style="display:none">
-  <div class="auth-card">
-    <div class="auth-logo">NEXUS</div>
-    <div class="auth-sub">// real social network</div>
-    <div class="auth-tabs">
-      <button class="auth-tab on" id="tab-in" onclick="authTab('in')">Sign In</button>
-      <button class="auth-tab" id="tab-up" onclick="authTab('up')">Sign Up</button>
+  <canvas id="auth-bg-canvas"></canvas>
+  <div class="auth-wrap">
+    <!-- LEFT PANEL - why join -->
+    <div class="auth-left">
+      <div class="auth-left-logo">NEXUS</div>
+      <div class="auth-left-tag">// the real social network</div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon" style="background:rgba(0,255,225,.1);border:1px solid rgba(0,255,225,.2)">💬</div>
+        <div><div class="auth-feature-text">Real-time messaging</div><div class="auth-feature-sub">Instant DMs with reactions, replies & media</div></div>
+      </div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon" style="background:rgba(181,77,255,.1);border:1px solid rgba(181,77,255,.2)">👥</div>
+        <div><div class="auth-feature-text">Group chats</div><div class="auth-feature-sub">Create groups, assign roles, pin messages</div></div>
+      </div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon" style="background:rgba(255,45,120,.1);border:1px solid rgba(255,45,120,.2)">📸</div>
+        <div><div class="auth-feature-text">24hr Stories</div><div class="auth-feature-sub">Share moments that disappear after a day</div></div>
+      </div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon" style="background:rgba(0,200,100,.1);border:1px solid rgba(0,200,100,.2)">📰</div>
+        <div><div class="auth-feature-text">Social Feed</div><div class="auth-feature-sub">Posts, likes, comments from people you follow</div></div>
+      </div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon" style="background:rgba(255,183,0,.1);border:1px solid rgba(255,183,0,.2)">🔔</div>
+        <div><div class="auth-feature-text">Push Notifications</div><div class="auth-feature-sub">Never miss a message, even when offline</div></div>
+      </div>
+      <div class="auth-left-footer">FREE FOREVER · NO ADS · NO TRACKING</div>
     </div>
-    <div class="auth-err" id="auth-err"></div>
-    <div id="form-in">
-      <div class="auth-lbl">Email</div>
-      <input class="auth-in" id="in-email" type="email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doLogin()">
-      <div class="auth-lbl">Password</div>
-      <input class="auth-in" id="in-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-      <button class="auth-btn" id="btn-in" onclick="doLogin()">SIGN IN →</button>
-    </div>
-    <div id="form-up" style="display:none">
-      <div class="auth-lbl">Username</div>
-      <input class="auth-in" id="up-user" placeholder="cooluser" onkeydown="if(event.key==='Enter')doSignup()">
-      <div class="auth-lbl">Email</div>
-      <input class="auth-in" id="up-email" type="email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doSignup()">
-      <div class="auth-lbl">Password</div>
-      <input class="auth-in" id="up-pass" type="password" placeholder="min 6 chars" onkeydown="if(event.key==='Enter')doSignup()">
-      <button class="auth-btn" id="btn-up" onclick="doSignup()">CREATE ACCOUNT →</button>
+    <!-- RIGHT PANEL - auth form -->
+    <div class="auth-card">
+      <div class="auth-logo">NEXUS</div>
+      <div class="auth-sub">// join the network</div>
+      <div class="auth-tabs">
+        <button class="auth-tab on" id="tab-in" onclick="authTab('in')">Sign In</button>
+        <button class="auth-tab" id="tab-up" onclick="authTab('up')">Sign Up</button>
+      </div>
+      <div class="auth-err" id="auth-err"></div>
+      <div id="form-in">
+        <div class="auth-lbl">Email</div>
+        <input class="auth-in" id="in-email" type="email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doLogin()">
+        <div class="auth-lbl">Password</div>
+        <input class="auth-in" id="in-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="auth-btn" id="btn-in" onclick="doLogin()">SIGN IN →</button>
+      </div>
+      <div id="form-up" style="display:none">
+        <div class="auth-lbl">Username</div>
+        <input class="auth-in" id="up-user" placeholder="cooluser" onkeydown="if(event.key==='Enter')doSignup()">
+        <div class="auth-lbl">Email</div>
+        <input class="auth-in" id="up-email" type="email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doSignup()">
+        <div class="auth-lbl">Password</div>
+        <input class="auth-in" id="up-pass" type="password" placeholder="min 6 chars" onkeydown="if(event.key==='Enter')doSignup()">
+        <button class="auth-btn" id="btn-up" onclick="doSignup()">CREATE ACCOUNT →</button>
+      </div>
+      <div style="margin-top:20px;text-align:center;font-size:10px;color:var(--t4);font-family:var(--mono)">By joining you agree to be awesome 🚀</div>
     </div>
   </div>
 </div>
@@ -1020,6 +1065,42 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 const SURL='https://pvahgjdvgcnkozprszya.supabase.co';
 const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2YWhnamR2Z2Nua296cHJzenlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODI5NDUsImV4cCI6MjA4ODk1ODk0NX0.Yp5Fn5-IHXhToTsI2-Hg2JgXy05RhHhgaAlGY_xbu5g';
 const sb=supabase.createClient(SURL,SKEY);
+
+// -- AUTH BACKGROUND ANIMATION --
+function initAuthBg(){
+  const canvas=document.getElementById('auth-bg-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let W=canvas.width=window.innerWidth,H=canvas.height=window.innerHeight;
+  window.addEventListener('resize',()=>{W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;});
+  const particles=Array.from({length:60},()=>({
+    x:Math.random()*W,y:Math.random()*H,
+    vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,
+    r:Math.random()*1.5+.5,
+    color:Math.random()>.5?'rgba(0,255,225,':'rgba(181,77,255,'
+  }));
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach((p,i)=>{
+      particles.slice(i+1).forEach(q=>{
+        const dx=p.x-q.x,dy=p.y-q.y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<120){
+          ctx.strokeStyle='rgba(0,255,225,'+(0.08*(1-d/120))+')';
+          ctx.lineWidth=.5;
+          ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();
+        }
+      });
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.color+'.4)';ctx.fill();
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>W)p.vx*=-1;
+      if(p.y<0||p.y>H)p.vy*=-1;
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+setTimeout(initAuthBg,100);
 
 // -- STATE --
 let ME=null, currentChat=null, currentProfile=null;
