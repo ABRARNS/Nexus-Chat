@@ -1702,6 +1702,8 @@ async function sendMsg(){
 
 // -- DELETE DM --
 async function deleteMsg(msgId){
+  // Block deletion of temp (optimistic) messages that haven't saved yet
+  if(!msgId||msgId.startsWith('tmp-')){showToast('⚠️ Message still sending, try again');return;}
   const{error}=await sb.from('messages').delete().eq('id',msgId).eq('sender_id',ME.id);
   if(error){showToast('❌ '+error.message);return;}
   document.querySelector(`[data-id="${msgId}"]`)?.remove();
@@ -1877,7 +1879,7 @@ function showCtxMenu(e,msgId,isMe,isGroup){
     ...((!isGroup)?[{icon:'↩',label:'Reply',fn:`startReply('${msgId}','${escAttr(loadedMsgs.find(m=>m.id===msgId)?.content||'')}')`}]:[]),
     ...((!isGroup)?[{icon:'↪',label:'Forward',fn:`forwardMsg('${msgId}')`}]:[]),
     {icon:'📌',label:'Pin',fn:`startPinMsg('${msgId}',${isGroup})`},
-    ...(canDelete?[{icon:'🗑',label:'Delete',fn:isGroup?`deleteGroupMsg('${msgId}')`:` deleteMsg('${msgId}')`,danger:true}]:[])
+    ...(canDelete&&!msgId.startsWith('tmp-')?[{icon:'🗑',label:'Delete',fn:isGroup?`deleteGroupMsg('${msgId}')`:` deleteMsg('${msgId}')`,danger:true}]:[])
   ];
   menu.innerHTML=items.map(i=>`<div class="ctx-item ${i.danger?'danger':''}" onclick="${i.fn};closeCtxMenu()">${i.icon} ${i.label}</div>`).join('');
   const x=Math.min(e.clientX,window.innerWidth-185),y=Math.min(e.clientY,window.innerHeight-items.length*44);
@@ -2322,6 +2324,7 @@ async function sendGroupMsg(){
 
 // -- DELETE GROUP MESSAGE --
 async function deleteGroupMsg(msgId){
+  if(!msgId||msgId.startsWith('tmp-')){showToast('⚠️ Message still sending, try again');return;}
   const{error}=await sb.from('group_messages').delete().eq('id',msgId);
   if(error){showToast('❌ '+error.message);return;}
   document.querySelector(`[data-id="${msgId}"]`)?.remove();
