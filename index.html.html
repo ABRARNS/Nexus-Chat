@@ -628,9 +628,17 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
   .nav{display:none}.right-panel{display:none}
   #bottom-nav{display:flex}.body{padding-bottom:58px}
   .top{padding:0 14px;gap:10px;height:54px}.top-logo{font-size:17px;letter-spacing:4px}.top-search{display:none}
-  .auth-wrap{flex-direction:column;border-radius:var(--r20) var(--r20) 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;min-height:auto}
-  .auth-left{display:none}
-  .auth-card{width:100%;padding:28px 20px 32px;border-left:none;border-top:1px solid var(--border)}
+  .auth-wrap{flex-direction:column;border-radius:var(--r20) var(--r20) 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;min-height:auto;max-height:92vh;overflow-y:auto}
+  .auth-left{padding:20px 20px 0;background:rgba(10,10,18,.98)}
+  .auth-left::before,.auth-left::after{display:none}
+  .auth-left-logo{font-size:22px;letter-spacing:5px;margin-bottom:2px}
+  .auth-left-tag{margin-bottom:16px}
+  .auth-feature{margin-bottom:12px}
+  .auth-feature-icon{width:32px;height:32px;font-size:14px;border-radius:var(--r8)}
+  .auth-feature-text{font-size:12px}
+  .auth-feature-sub{font-size:10px}
+  .auth-left-footer{margin-top:12px;padding-bottom:4px}
+  .auth-card{width:100%;padding:20px 20px 28px;border-left:none;border-top:1px solid var(--border)}
   #auth{align-items:flex-end}
   .overlay{padding:0;align-items:flex-end}.modal{border-radius:var(--r20) var(--r20) 0 0;width:100%;max-width:100%;max-height:90vh;padding:24px 20px 32px}
   .toast{bottom:72px}.notif-panel{right:8px;left:8px;width:auto;top:58px}
@@ -2786,9 +2794,18 @@ async function loadFollowersList(){
 }
 
 async function loadProfileVisitors(){
-  const{data}=await sb.from('profile_visits').select('visitor_id,profiles!profile_visits_visitor_id_fkey(*)').eq('visited_id',ME.id).order('created_at',{ascending:false}).limit(30);
+  // Get visit records first
+  const{data:visits}=await sb.from('profile_visits').select('visitor_id,created_at').eq('visited_id',ME.id).order('created_at',{ascending:false}).limit(30);
+  if(!visits?.length){
+    document.getElementById('people-grid').innerHTML='<div style="color:var(--t4);font-family:var(--mono);font-size:13px;padding:20px 0;grid-column:1/-1">No visitors yet</div>';
+    return;
+  }
+  // Get unique visitor IDs then fetch profiles
   const seen=new Set();
-  const users=(data||[]).map(f=>f.profiles).filter(p=>p&&!seen.has(p.id)&&seen.add(p.id));
+  const uniqueIds=visits.map(v=>v.visitor_id).filter(id=>!seen.has(id)&&seen.add(id));
+  const{data:profs}=await sb.from('profiles').select('*').in('id',uniqueIds);
+  const profMap={};(profs||[]).forEach(p=>profMap[p.id]=p);
+  const users=uniqueIds.map(id=>profMap[id]).filter(Boolean);
   if(!users.length){
     document.getElementById('people-grid').innerHTML='<div style="color:var(--t4);font-family:var(--mono);font-size:13px;padding:20px 0;grid-column:1/-1">No visitors yet</div>';
     return;
@@ -3172,12 +3189,13 @@ function setDisappear(ms,label){
 
 // -- WHO VIEWED MY PROFILE --
 async function loadMyProfileVisitors(){
-  const{data}=await sb.from('profile_visits')
-    .select('visitor_id,created_at,profiles!profile_visits_visitor_id_fkey(username,avatar_url)')
-    .eq('visited_id',ME.id)
-    .order('created_at',{ascending:false})
-    .limit(20);
-  return(data||[]).map(v=>({...v.profiles,visited_at:v.created_at})).filter(Boolean);
+  const{data:visits}=await sb.from('profile_visits').select('visitor_id,created_at').eq('visited_id',ME.id).order('created_at',{ascending:false}).limit(20);
+  if(!visits?.length)return[];
+  const seen=new Set();
+  const uniqueIds=visits.map(v=>v.visitor_id).filter(id=>!seen.has(id)&&seen.add(id));
+  const{data:profs}=await sb.from('profiles').select('id,username,avatar_url').in('id',uniqueIds);
+  const profMap={};(profs||[]).forEach(p=>profMap[p.id]=p);
+  return visits.filter((v,i)=>visits.findIndex(x=>x.visitor_id===v.visitor_id)===i).map(v=>({...profMap[v.visitor_id],visited_at:v.created_at})).filter(p=>p?.username);
 }
 
 function inviteFriends(){
