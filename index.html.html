@@ -1568,9 +1568,32 @@ async function markReadDB(msgId){
 async function deleteExpiredMessages(uid){
   const now=new Date().toISOString();
   try{
-    await sb.from('messages').delete().eq('sender_id',ME.id).eq('receiver_id',uid).lt('disappears_at',now).not('disappears_at','is',null).catch(()=>{});
-    await sb.from('messages').delete().eq('receiver_id',ME.id).eq('sender_id',uid).lt('disappears_at',now).not('disappears_at','is',null).catch(()=>{});
-  }catch(e){console.log('expire cleanup:',e);}
+    await sb.from('messages').delete()
+      .eq('sender_id',ME.id).eq('receiver_id',uid)
+      .lt('disappears_at',now).neq('disappears_at',null);
+  }catch(e){}
+  try{
+    await sb.from('messages').delete()
+      .eq('sender_id',uid).eq('receiver_id',ME.id)
+      .lt('disappears_at',now).neq('disappears_at',null);
+  }catch(e){}
+}
+
+function scheduleMessageDeletion(msgs){
+  // Auto-remove disappearing messages from UI when they expire
+  const now=Date.now();
+  msgs.forEach(m=>{
+    if(!m.disappears_at)return;
+    const expiresIn=new Date(m.disappears_at).getTime()-now;
+    if(expiresIn<=0){
+      document.querySelector(`[data-id="${m.id}"]`)?.remove();
+    }else if(expiresIn<86400000){ // only schedule if <24hrs away
+      setTimeout(()=>{
+        document.querySelector(`[data-id="${m.id}"]`)?.remove();
+        loadedMsgs=loadedMsgs.filter(x=>x.id!==m.id);
+      },expiresIn);
+    }
+  });
 }
 
 async function loadMsgs(){
@@ -1579,7 +1602,10 @@ async function loadMsgs(){
     .or(`and(sender_id.eq.${ME.id},receiver_id.eq.${currentChat}),and(sender_id.eq.${currentChat},receiver_id.eq.${ME.id})`)
     .order('created_at',{ascending:true});
   loadedMsgs=data||[];
+  // Remove already-expired disappearing messages before rendering
+  loadedMsgs=loadedMsgs.filter(m=>!m.disappears_at||new Date(m.disappears_at)>new Date());
   renderMsgs(loadedMsgs);
+  scheduleMessageDeletion(loadedMsgs);
   setTimeout(()=>loadReactions(),100);
 }
 
@@ -1887,7 +1913,7 @@ function showCtxMenu(e,msgId,isMe,isGroup){
     ...((!isGroup)?[{icon:'↩',label:'Reply',fn:`startReply('${msgId}','${escAttr(loadedMsgs.find(m=>m.id===msgId)?.content||'')}')`}]:[]),
     ...((!isGroup)?[{icon:'↪',label:'Forward',fn:`forwardMsg('${msgId}')`}]:[]),
     {icon:'📌',label:'Pin',fn:`startPinMsg('${msgId}',${isGroup})`},
-    ...(canDelete&&!msgId.startsWith('tmp-')?[{icon:'🗑',label:'Delete',fn:isGroup?`deleteGroupMsg('${msgId}')`:` deleteMsg('${msgId}')`,danger:true}]:[])
+    ...(canDelete&&!msgId.startsWith('tmp-')?[{icon:'🗑',label:'Delete',fn:isGroup?`deleteGroupMsg('${msgId}')`:`deleteMsg('${msgId}')`,danger:true}]:[])
   ];
   menu.innerHTML=items.map(i=>`<div class="ctx-item ${i.danger?'danger':''}" onclick="${i.fn};closeCtxMenu()">${i.icon} ${i.label}</div>`).join('');
   const x=Math.min(e.clientX,window.innerWidth-185),y=Math.min(e.clientY,window.innerHeight-items.length*44);
@@ -2794,18 +2820,15 @@ async function loadFollowersList(){
 }
 
 async function loadProfileVisitors(){
-  // Get visit records first
-  const{data:visits}=await sb.from('profile_visits').select('visitor_id,created_at').eq('visited_id',ME.id).order('created_at',{ascending:false}).limit(30);
+  const{data:visits}=await sb.from('profile_visits').select('visitor_id,created_at').eq('visited_id',ME.id).order('created_at',{ascending:false}).limit(50);
   if(!visits?.length){
     document.getElementById('people-grid').innerHTML='<div style="color:var(--t4);font-family:var(--mono);font-size:13px;padding:20px 0;grid-column:1/-1">No visitors yet</div>';
     return;
   }
-  // Get unique visitor IDs then fetch profiles
-  const seen=new Set();
-  const uniqueIds=visits.map(v=>v.visitor_id).filter(id=>!seen.has(id)&&seen.add(id));
-  const{data:profs}=await sb.from('profiles').select('*').in('id',uniqueIds);
-  const profMap={};(profs||[]).forEach(p=>profMap[p.id]=p);
-  const users=uniqueIds.map(id=>profMap[id]).filter(Boolean);
+  const seenV=new Set();
+  const uniqueVids=[...new Set(visits.map(v=>v.visitor_id))];
+  const{data:vProfs}=await sb.from('profiles').select('*').in('id',uniqueVids);
+  const users=(vProfs||[]);
   if(!users.length){
     document.getElementById('people-grid').innerHTML='<div style="color:var(--t4);font-family:var(--mono);font-size:13px;padding:20px 0;grid-column:1/-1">No visitors yet</div>';
     return;
@@ -3189,13 +3212,12 @@ function setDisappear(ms,label){
 
 // -- WHO VIEWED MY PROFILE --
 async function loadMyProfileVisitors(){
-  const{data:visits}=await sb.from('profile_visits').select('visitor_id,created_at').eq('visited_id',ME.id).order('created_at',{ascending:false}).limit(20);
-  if(!visits?.length)return[];
-  const seen=new Set();
-  const uniqueIds=visits.map(v=>v.visitor_id).filter(id=>!seen.has(id)&&seen.add(id));
-  const{data:profs}=await sb.from('profiles').select('id,username,avatar_url').in('id',uniqueIds);
-  const profMap={};(profs||[]).forEach(p=>profMap[p.id]=p);
-  return visits.filter((v,i)=>visits.findIndex(x=>x.visitor_id===v.visitor_id)===i).map(v=>({...profMap[v.visitor_id],visited_at:v.created_at})).filter(p=>p?.username);
+  const{data:vis}=await sb.from('profile_visits').select('visitor_id,created_at').eq('visited_id',ME.id).order('created_at',{ascending:false}).limit(20);
+  if(!vis?.length)return[];
+  const uniqIds=[...new Set(vis.map(v=>v.visitor_id))];
+  const{data:vp}=await sb.from('profiles').select('id,username,avatar_url').in('id',uniqIds);
+  const vm={};(vp||[]).forEach(p=>vm[p.id]=p);
+  return uniqIds.map(id=>({...vm[id],visited_at:vis.find(v=>v.visitor_id===id)?.created_at})).filter(p=>p?.username);
 }
 
 function inviteFriends(){
