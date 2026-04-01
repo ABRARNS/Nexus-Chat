@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>NEXUS-CHAT v5.1 — Real Social Network</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
+<title>NEXUS-CHAT  — Real Social Network</title>
 <meta name="description" content="NEXUS — real-time social network.">
 <meta name="theme-color" content="#0a0a12">
 <link rel="manifest" href="/Nexus-Chat/manifest.json">
@@ -779,6 +779,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 <div id="app">
   <header class="top">
     <div class="top-logo" onclick="mobileBack()">NEXUS</div>
+  <div id="online-count" style="font-size:10px;font-family:var(--mono);color:var(--green);background:rgba(0,232,122,.1);border:1px solid rgba(0,232,122,.2);border-radius:var(--r99);padding:3px 10px;flex-shrink:0;display:none">● 0 online</div>
     <div class="top-search"><span class="top-search-ico">⌕</span><input placeholder="Search users…" id="top-search" oninput="searchUsers(this.value)"></div>
     <div class="top-right">
       <div class="top-icon" onclick="openModal('search-modal')">🔍</div>
@@ -873,7 +874,8 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
               <div class="ch-info"><div class="ch-name" id="gch-name"></div><div class="ch-status" id="gch-status" style="color:var(--t4)"></div></div>
               <div class="ch-actions">
                 <button class="ch-btn" id="announce-btn" onclick="openAnnouncement()" style="display:none" title="Announce">📢</button>
-                <button class="ch-btn" id="btn-group-disappear" onclick="toggleGroupDisappearing()" title="Disappearing messages">⏱</button>
+                <button class="ch-btn" onclick="toggleGroupMsgSearch()" title="Search">🔍</button>
+                <button class="ch-btn" id="btn-group-disappear" onclick="toggleGroupDisappearing()" title="Disappearing">⏱</button>
                 <button class="ch-btn" onclick="openGroupInfo()">ⓘ</button>
               </div>
             </div>
@@ -883,6 +885,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
               <span class="pin-bar-expiry" id="group-pin-bar-expiry"></span>
               <span class="pin-bar-close" onclick="unpinGroupMessage(event)">✕</span>
             </div>
+            <div class="msg-search" id="group-msg-search" style="display:none"><span>🔍</span><input placeholder="Search group messages…" oninput="searchGroupMsgs(this.value)"></div>
             <div class="msgs-wrap" id="group-msgs"></div>
             <div class="typing-line" id="group-typing-line"></div>
             <div id="announcement-bar" style="display:none;background:rgba(255,183,0,.08);border-top:1px solid rgba(255,183,0,.2);padding:8px 16px;font-size:12px;color:var(--gold);font-family:var(--mono)">📢 <span id="announcement-text"></span></div>
@@ -954,8 +957,17 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="story-tap-right" onclick="nextStory()"></div>
   </div>
   <div class="story-views-bar" id="sv-views"></div>
-  <div id="sv-delete-wrap" style="display:none;padding:8px 16px">
-    <button onclick="deleteCurrentStory()" style="background:rgba(255,45,120,.15);border:1px solid rgba(255,45,120,.3);border-radius:var(--r8);color:var(--pink);padding:8px 20px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:600;width:100%">🗑 Delete My Story</button>
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 16px">
+    <div id="story-rxn-bar" style="display:flex;gap:8px;flex:1">
+      <button onclick="reactToStory('❤️')" style="background:rgba(255,255,255,.1);border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">❤️</button>
+      <button onclick="reactToStory('🔥')" style="background:rgba(255,255,255,.1);border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">🔥</button>
+      <button onclick="reactToStory('😮')" style="background:rgba(255,255,255,.1);border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">😮</button>
+      <button onclick="reactToStory('😂')" style="background:rgba(255,255,255,.1);border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">😂</button>
+      <button onclick="reactToStory('👏')" style="background:rgba(255,255,255,.1);border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">👏</button>
+    </div>
+    <div id="sv-delete-wrap" style="display:none">
+      <button onclick="deleteCurrentStory()" style="background:rgba(255,45,120,.15);border:1px solid rgba(255,45,120,.3);border-radius:var(--r8);color:var(--pink);padding:8px 14px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:600">🗑 Delete</button>
+    </div>
   </div>
 </div>
 
@@ -1213,6 +1225,7 @@ async function showApp(){
   startPresence();
   startGlobalSub();
   checkInviteCode();
+  setTimeout(updateOnlineCount,2000);
 }
 
 function showAuth(){
@@ -1376,11 +1389,13 @@ function startPresence(){
     if(!payload?.uid||payload.uid===ME.id)return;
     onlineTimestamps[payload.uid]=Date.now();
     onlineUsers.add(payload.uid);
+    updateOnlineCount();
     updateOnlineUI();
   });
   presenceCh.on('broadcast',{event:'bye'},({payload})=>{
     if(!payload?.uid)return;
     onlineUsers.delete(payload.uid);
+    updateOnlineCount();
     delete onlineTimestamps[payload.uid];
     updateOnlineUI();
   });
@@ -1920,16 +1935,33 @@ function scrollToGroupPinned(){
 
 // -- REACTIONS --
 async function addRxn(msgId,emoji,isGroup){
-  const{error}=await sb.from('message_reactions').insert({message_id:msgId,user_id:ME.id,emoji});
-  if(error&&error.code==='23505')await sb.from('message_reactions').delete().eq('message_id',msgId).eq('user_id',ME.id).eq('emoji',emoji);
+  if(!msgId||msgId.startsWith('tmp-'))return;
+  const table=isGroup?'group_message_reactions':'message_reactions';
+  const{error}=await sb.from(table).insert({message_id:msgId,user_id:ME.id,emoji});
+  if(error&&error.code==='23505')await sb.from(table).delete().eq('message_id',msgId).eq('user_id',ME.id).eq('emoji',emoji);
   await loadRxnFor(msgId);
 }
 
 async function loadRxnFor(msgId){
-  const{data}=await sb.from('message_reactions').select('*').eq('message_id',msgId);
+  const table2=isGroup?'group_message_reactions':'message_reactions';
+  const{data}=await sb.from(table2).select('*').eq('message_id',msgId);
   const c=document.getElementById('rxns-'+msgId);if(!c)return;
   const g={};(data||[]).forEach(r=>{g[r.emoji]=g[r.emoji]||[];g[r.emoji].push(r.user_id);});
-  c.innerHTML=Object.entries(g).map(([em,users])=>`<span class="rxn ${users.includes(ME.id)?'mine':''}" onclick="addRxn('${msgId}','${em}',false)">${em}<span class="rxn-n">${users.length}</span></span>`).join('');
+  c.innerHTML=Object.entries(g).map(([em,users])=>`<span class="rxn ${users.includes(ME.id)?'mine':''}" onclick="addRxn('${msgId}','${em}',${isGroup})">${em}<span class="rxn-n">${users.length}</span></span>`).join('');
+}
+
+async function loadGroupReactions(){
+  if(!loadedGroupMsgs.length)return;
+  const ids=loadedGroupMsgs.filter(m=>!m.id.startsWith('tmp-')).map(m=>m.id);
+  if(!ids.length)return;
+  const{data}=await sb.from('group_message_reactions').select('*').in('message_id',ids);
+  if(!data)return;
+  const g={};
+  data.forEach(r=>{if(!g[r.message_id])g[r.message_id]={};if(!g[r.message_id][r.emoji])g[r.message_id][r.emoji]=[];g[r.message_id][r.emoji].push(r.user_id);});
+  Object.entries(g).forEach(([mid,rxns])=>{
+    const el=document.getElementById('rxns-'+mid);if(!el)return;
+    el.innerHTML=Object.entries(rxns).map(([em,users])=>`<span class="rxn ${users.includes(ME.id)?'mine':''}" onclick="addRxn('${mid}','${em}',true)">${em}<span class="rxn-n">${users.length}</span></span>`).join('');
+  });
 }
 
 async function loadReactions(){
@@ -2334,6 +2366,7 @@ async function loadGroupMsgs(){
   const{data}=await sb.from('group_messages').select('*').eq('group_id',currentGroup).order('created_at',{ascending:true}).limit(100);
   loadedGroupMsgs=data||[];
   renderGroupMsgs(loadedGroupMsgs);
+  setTimeout(()=>loadGroupReactions(),100);
 }
 
 function renderGroupMsgs(msgs){
@@ -2743,6 +2776,7 @@ function renderFeed(posts){
       <div class="post-actions">
         <button class="pa ${liked?'liked':''}" onclick="likePost('${post.id}',this)" ${liked?'disabled':''}>${liked?'❤️':'♡'} ${post.likes||0}</button>
         <button class="pa" onclick="openComments('${post.id}')">💬 ${post.comment_count||0}</button>
+        <button class="pa" onclick="sharePost('${post.id}','${esc(post.content?.slice(0,60)||'')}')">↪ Share</button>
         ${post.user_id===ME.id?`<button class="pa" style="color:var(--pink)" onclick="deletePost('${post.id}')">🗑 Delete</button>`:''}
       </div>
     </div>`;
@@ -3489,6 +3523,69 @@ function loadGroupDisappearMode(gid){
   groupDisappearingMode=saved?parseInt(saved):false;
   const btn=document.getElementById('btn-group-disappear');
   if(btn)btn.classList.toggle('active',!!groupDisappearingMode);
+}
+
+// ── ONLINE COUNT ──
+function updateOnlineCount(){
+  const n=onlineUsers.size;
+  const el=document.getElementById('online-count');
+  if(!el)return;
+  el.style.display=n>0?'block':'none';
+  el.textContent=`● ${n} online`;
+}
+
+// ── SHARE POST TO DM ──
+function sharePost(postId,preview){
+  // Show user picker
+  document.getElementById('ctx-menu')?.remove();
+  const menu=document.createElement('div');
+  menu.className='ctx-menu';menu.id='ctx-menu';
+  menu.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:260px;max-height:320px;overflow-y:auto;z-index:600';
+  const users=allUsers.slice(0,20);
+  menu.innerHTML=`<div style="padding:10px 14px;font-size:11px;font-family:var(--mono);color:var(--t4);border-bottom:1px solid var(--border)">SHARE POST WITH</div>`+
+    users.map(u=>`<div class="ctx-item" onclick="sendSharedPost('${postId}','${esc(preview)}','${u.id}');closeCtxMenu()">
+      <span style="margin-right:8px">💬</span>@${u.username}
+    </div>`).join('');
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
+}
+
+async function sendSharedPost(postId,preview,toUserId){
+  const text=`↪ Shared a post: "${preview}"`;
+  await sb.from('messages').insert({sender_id:ME.id,receiver_id:toUserId,content:text});
+  showToast('✅ Post shared!');
+  chatWith(toUserId);
+}
+
+// ── STORY REACTIONS ──
+function reactToStory(emoji){
+  const userGroup=currentStories[currentStoryIdx];
+  if(!userGroup)return;
+  const story=userGroup.stories[currentUserStoryIdx];
+  if(!story||story.user_id===ME.id)return;
+  // Send reaction as a DM to story owner
+  const text=`${emoji} reacted to your story`;
+  sb.from('messages').insert({sender_id:ME.id,receiver_id:story.user_id,content:text}).then(()=>{
+    showToast(emoji+' Reaction sent!');
+  });
+}
+
+// ── GROUP MESSAGE SEARCH ──
+let groupSearchOn=false;
+function toggleGroupMsgSearch(){
+  groupSearchOn=!groupSearchOn;
+  const bar=document.getElementById('group-msg-search');
+  if(bar){
+    bar.style.display=groupSearchOn?'flex':'none';
+    if(groupSearchOn)bar.querySelector('input')?.focus();
+    else{bar.querySelector('input').value='';renderGroupMsgs(loadedGroupMsgs);}
+  }
+}
+
+function searchGroupMsgs(v){
+  if(!v.trim()){renderGroupMsgs(loadedGroupMsgs);return;}
+  const filtered=loadedGroupMsgs.filter(m=>(m.content||'').toLowerCase().includes(v.toLowerCase()));
+  renderGroupMsgs(filtered);
 }
 
 // -- FLOATING NOTIFICATION --
