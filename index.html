@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>NEXUS-CHAT — Real Social Network</title>
+<title>NEXUS-CHAT v5.1 — Real Social Network</title>
 <meta name="description" content="NEXUS — real-time social network.">
 <meta name="theme-color" content="#0a0a12">
 <link rel="manifest" href="/Nexus-Chat/manifest.json">
@@ -17,25 +17,23 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "45c5191c-f5f9-4868-827c-cd108aeed138",
-      serviceWorkerPath: "/Nexus-Chat/sw.js",
-      serviceWorkerParam: { scope: "/Nexus-Chat/" },
+      serviceWorkerPath: "/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/" },
       promptOptions: {
         slidedown: {
           prompts: [{
             type: "push",
-            autoPrompt: true,
+            autoPrompt: false,
             text: {
-              actionMessage: "NEXUS-CHAT wants to send you notifications when you get a message.",
+              actionMessage: "Get notified when someone messages you on NEXUS-CHAT!",
               acceptButton: "Allow",
               cancelButton: "No thanks"
             },
-            delay: { timeDelay: 3, pageViews: 1 }
+            delay: { timeDelay: 5, pageViews: 1 }
           }]
         }
       }
     });
-    // Also request permission directly after init
-    await OneSignal.Notifications.requestPermission();
   });
 </script>
 <style>
@@ -51,10 +49,34 @@
   --r8:8px;--r12:12px;--r16:16px;--r20:20px;--r99:99px;
   --shadow:0 8px 32px rgba(0,0,0,.4);--shadow-lg:0 20px 60px rgba(0,0,0,.6);
 }
+body.light{
+  --bg:#f7f8fc;--bg2:#eef0f8;--bg3:#e4e6f0;
+  --card:#ffffff;--card2:#f0f2fa;--card3:#e8eaf6;
+  --border:rgba(0,0,50,.08);--border2:rgba(0,0,50,.15);
+  --cyan:#0077aa;--pink:#cc0055;--purple:#6600bb;--gold:#996600;--green:#006633;
+  --cyan-dim:rgba(0,119,170,.1);--pink-dim:rgba(204,0,85,.1);--purple-dim:rgba(102,0,187,.1);
+  --t1:#0d0d2a;--t2:#2a2a4a;--t3:#6a6a8a;--t4:#9a9ab8;
+  --shadow:0 8px 32px rgba(0,0,80,.1);--shadow-lg:0 20px 60px rgba(0,0,80,.18);
+}
+body.light::after{display:none}
+body.light .bubble.me{background:linear-gradient(135deg,#0077aa,#0055cc);color:#fff}
+body.light .bubble.them{background:#ffffff;border:1px solid #dde0f0;color:#0d0d2a}
+body.light .auth-left{background:linear-gradient(135deg,#0d1a2e,#1a1040)}
+body.light .top{background:rgba(247,248,252,.95)}
+body.light #bottom-nav{background:rgba(247,248,252,.97)}
+body.light .nav{background:#eef0f8;border-right-color:#dde0f0}
 html,body{height:100%;overflow:hidden;background:var(--bg);font-family:var(--font);color:var(--t1);-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--card3);border-radius:4px}
 ::selection{background:rgba(0,255,225,.2)}
 body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,225,.004) 2px,rgba(0,255,225,.004) 4px);pointer-events:none;z-index:9999}
+
+/* -- NOTIF PROMPT BANNER -- */
+#notif-prompt-bar{position:fixed;top:0;left:0;right:0;z-index:600;background:linear-gradient(135deg,rgba(181,77,255,.95),rgba(0,255,225,.95));padding:10px 16px;display:flex;align-items:center;gap:12px;transform:translateY(-100%);transition:transform .4s cubic-bezier(.4,0,.2,1)}
+#notif-prompt-bar.on{transform:translateY(0)}
+#notif-prompt-bar .npb-text{flex:1;font-size:13px;font-weight:600;color:#000}
+#notif-prompt-bar .npb-text span{font-size:11px;font-weight:400;opacity:.8;display:block}
+#notif-prompt-bar button{background:rgba(0,0,0,.2);border:1px solid rgba(0,0,0,.2);border-radius:var(--r8);padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;color:#000;font-family:var(--font)}
+#notif-prompt-bar .npb-close{background:none;border:none;color:#000;font-size:18px;cursor:pointer;padding:0 4px;opacity:.6}
 
 /* -- EPIC LOADING SCREEN -- */
 #loading{
@@ -744,6 +766,16 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
   </div>
 </div>
 
+<!-- NOTIF PROMPT BANNER -->
+<div id="notif-prompt-bar">
+  <div style="font-size:22px">🔔</div>
+  <div class="npb-text">Enable notifications
+    <span>Get notified when someone messages you</span>
+  </div>
+  <button onclick="enableNotifFromBanner()">Enable</button>
+  <button class="npb-close" onclick="dismissNotifBanner()">✕</button>
+</div>
+
 <div id="app">
   <header class="top">
     <div class="top-logo" onclick="mobileBack()">NEXUS</div>
@@ -841,6 +873,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
               <div class="ch-info"><div class="ch-name" id="gch-name"></div><div class="ch-status" id="gch-status" style="color:var(--t4)"></div></div>
               <div class="ch-actions">
                 <button class="ch-btn" id="announce-btn" onclick="openAnnouncement()" style="display:none" title="Announce">📢</button>
+                <button class="ch-btn" id="btn-group-disappear" onclick="toggleGroupDisappearing()" title="Disappearing messages">⏱</button>
                 <button class="ch-btn" onclick="openGroupInfo()">ⓘ</button>
               </div>
             </div>
@@ -964,7 +997,16 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 </div>
 
 <!-- NOTIF PANEL -->
-<div class="notif-panel" id="notif-panel"><div class="np-head">Signals <span class="np-mark" onclick="markRead()">mark read</span></div><div id="notif-list"></div></div>
+<div class="notif-panel" id="notif-panel">
+  <div class="np-head">
+    <span>Notifications</span>
+    <span class="np-mark" onclick="markRead()">mark all read</span>
+  </div>
+  <div id="notif-list"></div>
+  <div style="padding:10px;text-align:center;border-top:1px solid var(--border)">
+    <button style="background:none;border:none;color:var(--t4);font-size:11px;cursor:pointer;font-family:var(--mono)" onclick="clearAllNotifs()">Clear all</button>
+  </div>
+</div>
 
 <!-- LIGHTBOX -->
 <div id="lbox" onclick="closeLbox()"><span id="lbox-x" onclick="closeLbox()">✕</span><img id="lbox-img" src=""></div>
@@ -992,6 +1034,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="fl">Bio</div><textarea class="fi" id="edit-bio" placeholder="Tell people about yourself…"></textarea>
     <button class="mbtn prim" onclick="saveProfile()">SAVE CHANGES</button>
     <button class="mbtn sec" onclick="closeModal('profile-modal');openBlockedList()">🚫 Blocked Users</button>
+    <button class="mbtn sec" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Switch to Light Mode</button>
     <button class="mbtn sec" onclick="openProfileVisitorsModal()">👁 Who Viewed My Profile</button>
     <button class="mbtn sec" id="notif-enable-btn" onclick="enableNotifications()">🔔 Enable Notifications</button>
     <button class="mbtn prim" onclick="inviteFriends()" style="background:linear-gradient(135deg,rgba(0,255,225,.15),rgba(181,77,255,.15));border-color:rgba(0,255,225,.3)">🔗 Invite Friends to NEXUS</button>
@@ -1133,9 +1176,9 @@ const URL_REGEX=/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{
 async function init(){
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/Nexus-Chat/sw.js').catch(()=>{});
   // OneSignal - link user ID so we can target specific users
-  if(window.OneSignalDeferred){
+  if(window.OneSignalDeferred&&ME?.id){
     OneSignalDeferred.push(async function(OneSignal){
-      await OneSignal.login(ME.id);
+      try{ await OneSignal.login(ME.id); }catch(e){ console.log('OS login:',e); }
     });
   }
   try{
@@ -1157,7 +1200,9 @@ async function showApp(){
   document.getElementById('auth').style.display='none';
   document.getElementById('app').classList.add('on');
   renderMyAv();
+  loadTheme();
   checkNotifStatus();
+  checkShowNotifBanner();
   loadBlocks();
   loadFollowing();
   loadConvos();
@@ -1664,7 +1709,8 @@ function makeBubble(msg,isFirst,groupMode,membersList){
   const renderedText=renderContent(contentText,groupMode?membersList:null);
   const content=hasImg?`${renderedText?`<div style="margin-bottom:6px">${renderedText}</div>`:''}<img class="msg-img" src="${msg.media_url}" onclick="openLbox('${msg.media_url.replace(/'/g,"\\'")}')">`:renderedText;
   const avHtml=avUrl?`<img src="${avUrl}">`:`<div style="background:${col};width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${uname[0].toUpperCase()}</div>`;
-  const ticks=(!groupMode&&isMe)?`<span class="msg-tick ${msg.read_at?'read':''}">✓✓</span>`:'';
+  const readTime=msg.read_at?new Date(msg.read_at).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'}):'';
+  const ticks=(!groupMode&&isMe)?`<span class="msg-tick ${msg.read_at?'read':''}" title="${msg.read_at?'Seen at '+readTime:''}">${msg.read_at?'✓✓ Seen':'✓✓'}</span>`:'';
   const roleInfo=groupMode&&!isMe&&(groupMembersCache[msg.sender_id]?.role)?(groupMembersCache[msg.sender_id].role):'';
   const roleBadge=roleInfo&&roleInfo!=='member'?`<span class="role-badge ${roleInfo}">${roleInfo}</span>`:'';
 
@@ -1729,8 +1775,7 @@ async function sendMsg(){
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
   if(chatChannel)chatChannel.send({type:'broadcast',event:'msg',payload:{...newMsg}});
-  // Push to receiver — works even when their tab/app is closed
-  sendPushToUser(currentChat,`@${ME.username}`,text||'📷 Sent an image');
+  // Push handled by DB webhook
   loadConvos();
 }
 
@@ -2093,9 +2138,9 @@ async function openGroupChat(groupId){
   if(groupMembersCache[ME.id])groupMembersCache[ME.id].role=currentGroupRole;
   groupMembers=Object.values(groupMembersCache);
   document.getElementById('gch-status').textContent=`${groupMembers.length} members`;
-  // Show announcement button for admins/owners
   const announceBtn=document.getElementById('announce-btn');
   if(announceBtn)announceBtn.style.display=(currentGroupRole==='owner'||currentGroupRole==='admin')?'flex':'none';
+  loadGroupDisappearMode(gid);
 
   document.getElementById('group-chat-empty').style.display='none';
   document.getElementById('active-group-chat').style.display='flex';
@@ -2333,6 +2378,7 @@ async function sendGroupMsg(){
 
   const msgRow={group_id:currentGroup,sender_id:ME.id,content:text||null};
   if(media_url){msgRow.media_url=media_url;msgRow.media_type=media_type;}
+  if(groupDisappearingMode)msgRow.disappears_at=new Date(Date.now()+groupDisappearingMode).toISOString();
 
   const{error}=await sb.from('group_messages').insert(msgRow);
   if(error){showToast('❌ '+error.message);bubble.remove();return;}
@@ -2733,17 +2779,75 @@ function renderNotifs(){
   const el=document.getElementById('notif-list');
   el.innerHTML=notifs.length?notifs.map(n=>{
     const u=n.profile||{},uname=u.username||'?';
-    return`<div class="ni ${n.read?'':'unread'}" onclick="n.read=true;renderNotifs()">
+    return`<div class="ni ${n.read?'':'unread'}" onclick="n.read=true;renderNotifs();${n.action||''}">
       <div class="ni-av" style="background:${uc(uname)}">${u.avatar_url?`<img src="${u.avatar_url}">`:`<span>${uname[0].toUpperCase()}</span>`}</div>
-      <div class="ni-body"><div class="ni-text"><strong>@${uname}</strong> ${n.text}</div><div class="ni-when">${n.t}</div></div>
+      <div class="ni-body">
+        <div class="ni-text"><span style="color:var(--cyan);font-size:14px">${n.icon||'🔔'}</span> <strong>@${uname}</strong> ${n.text}</div>
+        <div class="ni-when">${n.t}</div>
+      </div>
       ${!n.read?'<div class="ni-dot"></div>':''}
     </div>`;
-  }).join(''):'<div style="padding:24px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">no signals yet</div>';
+  }).join(''):'<div style="padding:24px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">no notifications yet</div>';
   const n=notifs.filter(n=>!n.read).length;
   const b=document.getElementById('notif-badge');b.textContent=n;b.style.display=n?'flex':'none';
 }
 
 function markRead(){notifs.forEach(n=>n.read=true);renderNotifs();}
+
+// -- NOTIF PROMPT BANNER --
+async function checkShowNotifBanner(){
+  if(localStorage.getItem('notif_banner_dismissed'))return;
+  try{
+    if(!window.OneSignalDeferred)return;
+    OneSignalDeferred.push(async function(OneSignal){
+      const opted=await OneSignal.User.PushSubscription.optedIn;
+      if(!opted){
+        setTimeout(()=>{
+          document.getElementById('notif-prompt-bar')?.classList.add('on');
+        },3000);
+      }
+    });
+  }catch(e){}
+}
+
+function dismissNotifBanner(){
+  document.getElementById('notif-prompt-bar')?.classList.remove('on');
+  localStorage.setItem('notif_banner_dismissed','1');
+}
+
+async function enableNotifFromBanner(){
+  document.getElementById('notif-prompt-bar')?.classList.remove('on');
+  await enableNotifications();
+}
+function clearAllNotifs(){notifs=[];renderNotifs();showToast('🗑 Cleared');}
+
+function addNotifTyped(profile,text,type='message',action=null){
+  const icons={message:'💬',follow:'👤',comment:'💬',mention:'@',group:'👥',like:'❤️'};
+  notifs.unshift({profile,text,t:'just now',read:false,type,icon:icons[type]||'🔔',action});
+  if(notifs.length>50)notifs.pop();
+  const n=notifs.filter(n=>!n.read).length;
+  const b=document.getElementById('notif-badge');b.textContent=n;b.style.display=n?'flex':'none';
+}
+
+// ── THEME TOGGLE ──
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  localStorage.setItem('nexus_theme',isLight?'light':'dark');
+  const btn=document.getElementById('theme-toggle-btn');
+  if(btn)btn.textContent=isLight?'🌙 Switch to Dark Mode':'☀️ Switch to Light Mode';
+  // update meta theme color
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',isLight?'#f0f2f8':'#0a0a12');
+}
+
+function loadTheme(){
+  const saved=localStorage.getItem('nexus_theme');
+  if(saved==='light'){
+    document.body.classList.add('light');
+    const btn=document.getElementById('theme-toggle-btn');
+    if(btn)btn.textContent='🌙 Switch to Dark Mode';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#f0f2f8');
+  }
+}
 
 // -------------------------------------------
 // -- NEXUS v5 NEW FEATURES --
@@ -2855,6 +2959,7 @@ async function toggleFollow(uid,btn){
     myFollowing.add(uid);
     btn.textContent='Following';btn.classList.add('following');
     showToast('✅ Following!');
+    addNotifTyped(ME,'started following you','follow');
   }
 }
 
@@ -3253,16 +3358,43 @@ async function openProfileVisitorsModal(){
 
 // -- DELETE ACCOUNT --
 async function deleteAccount(){
-  const inp=prompt('Type DELETE to confirm deleting your account permanently:');
-  if(inp!=='DELETE'){showToast('Cancelled');return;}
-  // Delete all user data
-  await sb.from('messages').delete().or(`sender_id.eq.${ME.id},receiver_id.eq.${ME.id}`);
-  await sb.from('posts').delete().eq('user_id',ME.id);
-  await sb.from('stories').delete().eq('user_id',ME.id);
-  await sb.from('profiles').delete().eq('id',ME.id);
-  await sb.auth.admin?.deleteUser(ME.id).catch(()=>{});
+  closeModal('profile-modal');
+  const confirmed=await showConfirmModal(
+    '⚠️ Delete Account',
+    'This will permanently delete your account, all messages, posts and stories. This cannot be undone.',
+    'DELETE ACCOUNT','Cancel','danger'
+  );
+  if(!confirmed)return;
+  showToast('🗑 Deleting account...');
+  try{
+    await sb.from('messages').delete().or(`sender_id.eq.${ME.id},receiver_id.eq.${ME.id}`);
+    await sb.from('posts').delete().eq('user_id',ME.id);
+    await sb.from('stories').delete().eq('user_id',ME.id);
+    await sb.from('post_comments').delete().eq('user_id',ME.id);
+    await sb.from('group_members').delete().eq('user_id',ME.id);
+    await sb.from('follows').delete().or(`follower_id.eq.${ME.id},following_id.eq.${ME.id}`);
+    await sb.from('profiles').delete().eq('id',ME.id);
+  }catch(e){}
   await sb.auth.signOut();
   location.reload();
+}
+
+function showConfirmModal(title,body,confirmTxt,cancelTxt,type='normal'){
+  return new Promise(resolve=>{
+    document.getElementById('ctx-menu')?.remove();
+    const d=document.createElement('div');
+    d.className='overlay';d.style.cssText='display:flex;z-index:900';
+    d.innerHTML=`<div class="modal" style="max-width:360px;text-align:center">
+      <div style="font-size:18px;font-weight:800;margin-bottom:12px">${title}</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:24px">${body}</div>
+      <div style="display:flex;gap:8px">
+        <button class="mbtn sec" style="flex:1;margin-bottom:0" onclick="this.closest('.overlay').remove();resolve_confirm(false)">${cancelTxt}</button>
+        <button class="mbtn ${type==='danger'?'danger':'prim'}" style="flex:1;margin-bottom:0" onclick="this.closest('.overlay').remove();resolve_confirm(true)">${confirmTxt}</button>
+      </div>
+    </div>`;
+    window.resolve_confirm=resolve;
+    document.body.appendChild(d);
+  });
 }
 
 // -- ENABLE NOTIFICATIONS --
@@ -3318,6 +3450,45 @@ async function sendPushToUser(toUserId,title,message){
       body:JSON.stringify({toUserId,title,message})
     });
   }catch(e){console.log('Push failed:',e);}
+}
+
+// -- GROUP DISAPPEARING MESSAGES --
+let groupDisappearingMode=false;
+
+function toggleGroupDisappearing(){
+  const btn=document.getElementById('btn-group-disappear');
+  if(groupDisappearingMode){
+    groupDisappearingMode=false;
+    saveDisappearMode('g_'+currentGroup,false);
+    btn?.classList.remove('active');
+    showToast('Disappearing off');
+    return;
+  }
+  document.getElementById('ctx-menu')?.remove();
+  const menu=document.createElement('div');
+  menu.className='ctx-menu';menu.id='ctx-menu';
+  const opts=[['1 Hour',3600000],['24 Hours',86400000],['7 Days',604800000]];
+  menu.innerHTML=opts.map(o=>`<div class="ctx-item" onclick="setGroupDisappear(${o[1]},'${o[0]}')">${o[0]}</div>`).join('');
+  const btnEl=document.getElementById('btn-group-disappear');
+  const r=btnEl?.getBoundingClientRect()||{left:100,bottom:60};
+  menu.style.left=Math.min(r.left,window.innerWidth-180)+'px';
+  menu.style.top=(r.bottom+4)+'px';
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
+}
+
+function setGroupDisappear(ms,label){
+  groupDisappearingMode=ms;
+  saveDisappearMode('g_'+currentGroup,ms);
+  document.getElementById('btn-group-disappear')?.classList.add('active');
+  showToast('Disappearing: '+label);
+}
+
+function loadGroupDisappearMode(gid){
+  const saved=localStorage.getItem('disappear_g_'+gid);
+  groupDisappearingMode=saved?parseInt(saved):false;
+  const btn=document.getElementById('btn-group-disappear');
+  if(btn)btn.classList.toggle('active',!!groupDisappearingMode);
 }
 
 // -- FLOATING NOTIFICATION --
