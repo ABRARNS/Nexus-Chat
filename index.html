@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>NEXUS-CHAT  — Real Social Network</title>
+<title>NEXUS-CHAT v5.1 — Real Social Network</title>
 <meta name="description" content="NEXUS — real-time social network.">
 <meta name="theme-color" content="#0a0a12">
 <link rel="manifest" href="/Nexus-Chat/manifest.json">
@@ -2796,7 +2796,7 @@ function markRead(){notifs.forEach(n=>n.read=true);renderNotifs();}
 
 // -- NOTIF PROMPT BANNER --
 async function checkShowNotifBanner(){
-  if(localStorage.getItem('notif_banner_dismissed'))return;
+  if(localStorage.getItem('notif_banner_dismissed_v2'))return;
   try{
     if(!window.OneSignalDeferred)return;
     OneSignalDeferred.push(async function(OneSignal){
@@ -2812,7 +2812,7 @@ async function checkShowNotifBanner(){
 
 function dismissNotifBanner(){
   document.getElementById('notif-prompt-bar')?.classList.remove('on');
-  localStorage.setItem('notif_banner_dismissed','1');
+  localStorage.setItem('notif_banner_dismissed_v2','1');
 }
 
 async function enableNotifFromBanner(){
