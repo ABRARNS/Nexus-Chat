@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
-<title>NEXUS-CHAT  — Real Social Network</title>
+<title>NEXUS-CHAT — Real Social Network</title>
 <meta name="description" content="NEXUS — real-time social network.">
 <meta name="theme-color" content="#0a0a12">
 <link rel="manifest" href="/Nexus-Chat/manifest.json">
@@ -1178,21 +1178,6 @@ const URL_REGEX=/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{
 // -- INIT --
 async function init(){
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/Nexus-Chat/sw.js').catch(()=>{});
-  // OneSignal - link user ID after checking subscription
-  if(window.OneSignalDeferred&&ME?.id){
-    OneSignalDeferred.push(async function(OneSignal){
-      try{
-        await OneSignal.login(ME.id);
-        const opted=await OneSignal.User.PushSubscription.optedIn;
-        if(!opted){
-          // Try to opt in silently if permission already granted
-          if(Notification.permission==='granted'){
-            await OneSignal.User.PushSubscription.optIn().catch(()=>{});
-          }
-        }
-      }catch(e){ console.log('OS login:',e); }
-    });
-  }
   try{
     const{data:{session}}=await sb.auth.getSession();
     if(session?.user){await loadMe(session.user.id);showApp();}
@@ -1211,6 +1196,19 @@ async function showApp(){
   setTimeout(()=>loading.classList.add('gone'),650);
   document.getElementById('auth').style.display='none';
   document.getElementById('app').classList.add('on');
+  // OneSignal login - ME is now loaded
+  if(window.OneSignalDeferred&&ME?.id){
+    OneSignalDeferred.push(async function(OneSignal){
+      try{
+        await OneSignal.login(ME.id);
+        const opted=await OneSignal.User.PushSubscription.optedIn;
+        if(!opted&&Notification.permission==='granted'){
+          await OneSignal.User.PushSubscription.optIn().catch(()=>{});
+        }
+        console.log('OneSignal linked:',ME.id,'subscribed:',opted);
+      }catch(e){console.log('OS login error:',e);}
+    });
+  }
   renderMyAv();
   loadTheme();
   checkNotifStatus();
@@ -2774,7 +2772,7 @@ function renderFeed(posts){
       </div>
       ${post.content?`<div class="post-body">${esc(post.content)}</div>`:''}
       <div class="post-actions">
-        <button class="pa ${liked?'liked':''}" onclick="likePost('${post.id}',this)" ${liked?'disabled':''}>${liked?'❤️':'♡'} ${post.likes||0}</button>
+        <button class="pa ${liked?'liked':''}" onclick="likePost('${post.id}',this)">${liked?'❤️':'♡'} ${post.likes||0}</button>
         <button class="pa" onclick="openComments('${post.id}')">💬 ${post.comment_count||0}</button>
         <button class="pa" onclick="sharePost('${post.id}','${esc(post.content?.slice(0,60)||'')}')">↪ Share</button>
         ${post.user_id===ME.id?`<button class="pa" style="color:var(--pink)" onclick="deletePost('${post.id}')">🗑 Delete</button>`:''}
@@ -2791,12 +2789,23 @@ async function createPost(){
 }
 
 async function likePost(id,btn){
-  if(myLikedPosts.has(id))return;
+  if(myLikedPosts.has(id)){
+    // Unlike
+    await sb.from('post_likes').delete().eq('post_id',id).eq('user_id',ME.id);
+    const n=parseInt(btn.textContent.match(/\d+/)?.[0]||0);
+    await sb.from('posts').update({likes:Math.max(0,n-1)}).eq('id',id);
+    myLikedPosts.delete(id);
+    btn.classList.remove('liked');
+    btn.textContent='♡ '+Math.max(0,n-1);
+    return;
+  }
   const{error}=await sb.from('post_likes').insert({post_id:id,user_id:ME.id});
-  if(error){showToast('Already liked!');return;}
+  if(error)return;
   const n=parseInt(btn.textContent.match(/\d+/)?.[0]||0);
   await sb.from('posts').update({likes:n+1}).eq('id',id);
-  myLikedPosts.add(id);loadFeed();
+  myLikedPosts.add(id);
+  btn.classList.add('liked');
+  btn.textContent='❤️ '+(n+1);
 }
 
 async function deletePost(id){await sb.from('posts').delete().eq('id',id);showToast('🗑 Deleted');loadFeed();}
@@ -3155,6 +3164,8 @@ function showCurrentStory(){
   if(fill){setTimeout(()=>{fill.style.transition='width 5s linear';fill.style.width='100%';},50);}
   // Auto advance
   storyTimer=setTimeout(nextStory,5000);
+  // Load reactions for this story
+  loadStoryReactions(story.id);
   // Record view
   if(story.user_id!==ME.id){
     sb.from('story_views').upsert({story_id:story.id,user_id:ME.id}).catch(()=>{});
@@ -3557,48 +3568,96 @@ async function sendSharedPost(postId,preview,toUserId){
 }
 
 // ── STORY REACTIONS ──
-const storyRxnCounts={};
+const storyRxnMap={'❤️':'heart','🔥':'fire','😮':'wow','😂':'lol','👏':'clap'};
+const storyRxnEmoji={'heart':'❤️','fire':'🔥','wow':'😮','lol':'😂','clap':'👏'};
+let currentStoryReactions={}; // key=emoji, value=Set of user_ids
+let myStoryReactions=new Set(); // emojis I reacted with on current story
 
-function reactToStory(emoji){
+async function loadStoryReactions(storyId){
+  currentStoryReactions={};
+  myStoryReactions=new Set();
+  try{
+    const{data}=await sb.from('story_reactions').select('*').eq('story_id',storyId);
+    if(data){
+      data.forEach(r=>{
+        const key=storyRxnMap[r.emoji]||r.emoji;
+        if(!currentStoryReactions[key])currentStoryReactions[key]=new Set();
+        currentStoryReactions[key].add(r.user_id);
+        if(r.user_id===ME.id)myStoryReactions.add(key);
+      });
+    }
+  }catch(e){}
+  renderStoryRxnBar();
+}
+
+function renderStoryRxnBar(){
+  ['heart','fire','wow','lol','clap'].forEach(key=>{
+    const btn=document.getElementById('srxn-'+key);
+    const countEl=document.getElementById('srxn-count-'+key);
+    const count=(currentStoryReactions[key]||new Set()).size;
+    const isMine=myStoryReactions.has(key);
+    if(countEl)countEl.textContent=count>0?count:'';
+    if(btn){
+      btn.style.background=isMine?'rgba(255,255,255,.35)':'rgba(255,255,255,.12)';
+      btn.style.transform='scale(1)';
+      btn.style.border=isMine?'1px solid rgba(255,255,255,.6)':'1px solid rgba(255,255,255,.2)';
+    }
+  });
+}
+
+async function reactToStory(emoji){
   const userGroup=currentStories[currentStoryIdx];
   if(!userGroup)return;
   const story=userGroup.stories[currentUserStoryIdx];
   if(!story||story.user_id===ME.id)return;
-  // Animate button
-  const emojiMap={'❤️':'heart','🔥':'fire','😮':'wow','😂':'lol','👏':'clap'};
-  const key=emojiMap[emoji]||'heart';
-  const btn=document.getElementById('srxn-'+key);
-  if(btn){
-    btn.style.transform='scale(1.4)';
-    btn.style.background='rgba(255,255,255,.3)';
-    setTimeout(()=>{btn.style.transform='scale(1)';btn.style.background='rgba(255,255,255,.12)';},300);
-    storyRxnCounts[key]=(storyRxnCounts[key]||0)+1;
-    const countEl=document.getElementById('srxn-count-'+key);
-    if(countEl)countEl.textContent=storyRxnCounts[key]||'';
+  const key=storyRxnMap[emoji]||'heart';
+  const isMine=myStoryReactions.has(key);
+
+  if(isMine){
+    // Unlike - remove reaction
+    await sb.from('story_reactions').delete().eq('story_id',story.id).eq('user_id',ME.id).eq('emoji',emoji).catch(()=>{});
+    myStoryReactions.delete(key);
+    if(currentStoryReactions[key])currentStoryReactions[key].delete(ME.id);
+    // Shrink animation
+    const btn=document.getElementById('srxn-'+key);
+    if(btn){btn.style.transform='scale(0.8)';setTimeout(()=>{btn.style.transform='scale(1)';},200);}
+  }else{
+    // Add reaction
+    await sb.from('story_reactions').upsert({story_id:story.id,user_id:ME.id,emoji},{onConflict:'story_id,user_id,emoji'}).catch(()=>{});
+    myStoryReactions.add(key);
+    if(!currentStoryReactions[key])currentStoryReactions[key]=new Set();
+    currentStoryReactions[key].add(ME.id);
+    // Float + bounce animation
+    floatEmoji(emoji);
+    const btn=document.getElementById('srxn-'+key);
+    if(btn){
+      btn.style.transform='scale(1.4)';
+      setTimeout(()=>{btn.style.transform='scale(1)';},300);
+    }
+    // Notify story owner
+    if(story.user_id!==ME.id){
+      sb.from('messages').insert({sender_id:ME.id,receiver_id:story.user_id,content:emoji+' reacted to your story'}).catch(()=>{});
+    }
   }
-  // Float emoji animation
-  floatEmoji(emoji);
-  // Send reaction as DM to story owner
-  const text=emoji+' reacted to your story';
-  sb.from('messages').insert({sender_id:ME.id,receiver_id:story.user_id,content:text}).catch(()=>{});
-  showToast(emoji+' Reaction sent!');
+  renderStoryRxnBar();
 }
 
 function floatEmoji(emoji){
   const el=document.createElement('div');
   el.textContent=emoji;
-  el.style.cssText=`position:fixed;bottom:100px;left:${40+Math.random()*20}%;font-size:32px;pointer-events:none;z-index:1000;animation:floatUp 1.2s ease-out forwards`;
+  el.style.cssText='position:fixed;bottom:120px;left:'+(35+Math.random()*30)+'%;font-size:36px;pointer-events:none;z-index:1000;animation:floatUp 1.2s ease-out forwards';
   document.body.appendChild(el);
   setTimeout(()=>el.remove(),1200);
 }
 
 function resetStoryRxnCounts(){
-  Object.keys(storyRxnCounts).forEach(k=>delete storyRxnCounts[k]);
+  currentStoryReactions={};
+  myStoryReactions=new Set();
   ['heart','fire','wow','lol','clap'].forEach(k=>{
     const el=document.getElementById('srxn-count-'+k);
     if(el)el.textContent='';
     const btn=document.getElementById('srxn-'+k);
-    if(btn){btn.style.transform='scale(1)';btn.style.background='rgba(255,255,255,.12)';}
+    if(btn){btn.style.transform='scale(1)';btn.style.background='rgba(255,255,255,.12)';btn.style.border='1px solid rgba(255,255,255,.2)';}
   });
 }
 
