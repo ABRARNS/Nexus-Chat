@@ -17,8 +17,8 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "45c5191c-f5f9-4868-827c-cd108aeed138",
-      serviceWorkerPath: "/OneSignalSDKWorker.js",
-      serviceWorkerParam: { scope: "/" },
+      serviceWorkerPath: "/Nexus-Chat/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/Nexus-Chat/" },
       notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: true
     });
@@ -3613,33 +3613,27 @@ async function reactToStory(emoji){
   const key=storyRxnMap[emoji]||'heart';
   const isMine=myStoryReactions.has(key);
 
+  const btn2=document.getElementById('srxn-'+key);
   if(isMine){
-    // Unlike - remove reaction
-    await sb.from('story_reactions').delete().eq('story_id',story.id).eq('user_id',ME.id).eq('emoji',emoji).catch(()=>{});
+    // Unlike - animate first then DB
     myStoryReactions.delete(key);
     if(currentStoryReactions[key])currentStoryReactions[key].delete(ME.id);
-    // Shrink animation
-    const btn=document.getElementById('srxn-'+key);
-    if(btn){btn.style.transform='scale(0.8)';setTimeout(()=>{btn.style.transform='scale(1)';},200);}
+    if(btn2){btn2.style.transform='scale(0.8)';setTimeout(()=>{btn2.style.transform='scale(1)';},200);}
+    renderStoryRxnBar();
+    sb.from('story_reactions').delete().eq('story_id',story.id).eq('user_id',ME.id).eq('emoji',emoji).catch(()=>{});
   }else{
-    // Add reaction
-    await sb.from('story_reactions').upsert({story_id:story.id,user_id:ME.id,emoji},{onConflict:'story_id,user_id,emoji'}).catch(()=>{});
+    // Like - animate first then DB
     myStoryReactions.add(key);
     if(!currentStoryReactions[key])currentStoryReactions[key]=new Set();
     currentStoryReactions[key].add(ME.id);
-    // Float + bounce animation
     floatEmoji(emoji);
-    const btn=document.getElementById('srxn-'+key);
-    if(btn){
-      btn.style.transform='scale(1.4)';
-      setTimeout(()=>{btn.style.transform='scale(1)';},300);
-    }
-    // Notify story owner
+    if(btn2){btn2.style.transform='scale(1.4)';setTimeout(()=>{btn2.style.transform='scale(1)';},300);}
+    renderStoryRxnBar();
+    sb.from('story_reactions').upsert({story_id:story.id,user_id:ME.id,emoji},{onConflict:'story_id,user_id,emoji'}).catch(()=>{});
     if(story.user_id!==ME.id){
       sb.from('messages').insert({sender_id:ME.id,receiver_id:story.user_id,content:emoji+' reacted to your story'}).catch(()=>{});
     }
   }
-  renderStoryRxnBar();
 }
 
 function floatEmoji(emoji){
