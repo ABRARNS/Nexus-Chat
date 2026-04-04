@@ -955,11 +955,11 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
   <div class="story-views-bar" id="sv-views"></div>
   <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:linear-gradient(to top,rgba(0,0,0,.5),transparent)">
     <div id="story-rxn-bar" style="display:flex;gap:6px;flex:1;justify-content:center">
-      <button onclick="reactToStory('❤️')" id="srxn-heart" class="srxn-btn">❤️<span id="srxn-count-heart" class="srxn-count"></span></button>
       <button onclick="reactToStory('🔥')" id="srxn-fire" class="srxn-btn">🔥<span id="srxn-count-fire" class="srxn-count"></span></button>
       <button onclick="reactToStory('😂')" id="srxn-lol" class="srxn-btn">😂<span id="srxn-count-lol" class="srxn-count"></span></button>
       <button onclick="reactToStory('😮')" id="srxn-wow" class="srxn-btn">😮<span id="srxn-count-wow" class="srxn-count"></span></button>
-      <button onclick="reactToStory('💔')" id="srxn-sad" class="srxn-btn">💔<span id="srxn-count-sad" class="srxn-count"></span></button>
+      <button onclick="reactToStory('😡')" id="srxn-angry" class="srxn-btn">😡<span id="srxn-count-angry" class="srxn-count"></span></button>
+      <button onclick="reactToStory('👎')" id="srxn-down" class="srxn-btn">👎<span id="srxn-count-down" class="srxn-count"></span></button>
     </div>
     <div id="sv-delete-wrap" style="display:none">
       <button onclick="deleteCurrentStory()" style="background:rgba(255,45,120,.2);border:1px solid rgba(255,45,120,.4);border-radius:var(--r8);color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:600">🗑</button>
@@ -2844,7 +2844,7 @@ function markRead(){notifs.forEach(n=>n.read=true);renderNotifs();}
 
 // -- NOTIF PROMPT BANNER --
 async function checkShowNotifBanner(){
-  if(localStorage.getItem('notif_banner_dismissed_v2'))return;
+  if(localStorage.getItem('notif_banner_dismissed_v3'))return;
   try{
     if(!window.OneSignalDeferred)return;
     OneSignalDeferred.push(async function(OneSignal){
@@ -2860,7 +2860,7 @@ async function checkShowNotifBanner(){
 
 function dismissNotifBanner(){
   document.getElementById('notif-prompt-bar')?.classList.remove('on');
-  localStorage.setItem('notif_banner_dismissed_v2','1');
+  localStorage.setItem('notif_banner_dismissed_v3','1');
 }
 
 async function enableNotifFromBanner(){
@@ -3573,8 +3573,8 @@ async function sendSharedPost(postId,preview,toUserId){
 }
 
 // ── STORY REACTIONS ──
-const storyRxnMap={'❤️':'heart','🔥':'fire','😮':'wow','😂':'lol','👏':'clap','💔':'sad'};
-const storyRxnEmoji={'heart':'❤️','fire':'🔥','wow':'😮','lol':'😂','clap':'👏','sad':'💔'};
+const storyRxnMap={'🔥':'fire','😂':'lol','😮':'wow','😡':'angry','👎':'down'};
+const storyRxnEmoji={'fire':'🔥','lol':'😂','wow':'😮','angry':'😡','down':'👎'};
 let currentStoryReactions={}; // key=emoji, value=Set of user_ids
 let myStoryReactions=new Set(); // emojis I reacted with on current story
 
@@ -3582,21 +3582,21 @@ async function loadStoryReactions(storyId){
   currentStoryReactions={};
   myStoryReactions=new Set();
   try{
-    const{data}=await sb.from('story_reactions').select('*').eq('story_id',storyId);
-    if(data){
-      data.forEach(r=>{
-        const key=storyRxnMap[r.emoji]||r.emoji;
-        if(!currentStoryReactions[key])currentStoryReactions[key]=new Set();
-        currentStoryReactions[key].add(r.user_id);
-        if(r.user_id===ME.id)myStoryReactions.add(key);
-      });
-    }
-  }catch(e){}
+    const{data,error}=await sb.from('story_reactions').select('emoji,user_id').eq('story_id',storyId);
+    if(error){console.log('story rxn error:',error.message);renderStoryRxnBar();return;}
+    (data||[]).forEach(r=>{
+      const key=storyRxnMap[r.emoji];
+      if(!key)return;
+      if(!currentStoryReactions[key])currentStoryReactions[key]=new Set();
+      currentStoryReactions[key].add(r.user_id);
+      if(String(r.user_id)===String(ME.id))myStoryReactions.add(key);
+    });
+  }catch(e){console.log('story rxn catch:',e);}
   renderStoryRxnBar();
 }
 
 function renderStoryRxnBar(){
-  ['heart','fire','wow','lol','sad'].forEach(key=>{
+  ['fire','lol','wow','angry','down'].forEach(key=>{
     const btn=document.getElementById('srxn-'+key);
     const countEl=document.getElementById('srxn-count-'+key);
     const count=(currentStoryReactions[key]||new Set()).size;
@@ -3650,7 +3650,7 @@ function floatEmoji(emoji){
 function resetStoryRxnCounts(){
   currentStoryReactions={};
   myStoryReactions=new Set();
-  ['heart','fire','wow','lol','sad'].forEach(k=>{
+  ['fire','lol','wow','angry','down'].forEach(k=>{
     const el=document.getElementById('srxn-count-'+k);
     if(el)el.textContent='';
     const btn=document.getElementById('srxn-'+k);
