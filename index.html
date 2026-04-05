@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
-<title>NEXUS-CHAT v5.1 — Real Social Network</title>
+<title>NEXUS-CHAT — Real Social Network</title>
 <meta name="description" content="NEXUS — real-time social network.">
 <meta name="theme-color" content="#0a0a12">
 <link rel="manifest" href="/Nexus-Chat/manifest.json">
@@ -17,8 +17,8 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "45c5191c-f5f9-4868-827c-cd108aeed138",
-      serviceWorkerPath: "/Nexus-Chat/OneSignalSDKWorker.js",
-      serviceWorkerParam: { scope: "/Nexus-Chat/" },
+      serviceWorkerPath: "/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/" },
       notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: true
     });
@@ -3624,7 +3624,7 @@ async function reactToStory(emoji){
     floatEmoji(emoji);
     if(btn2){btn2.style.animation='popIn .4s ease';setTimeout(()=>{btn2.style.animation='';},400);}
     renderStoryRxnBar();
-    sb.from('story_reactions').upsert({story_id:story.id,user_id:ME.id,emoji},{onConflict:'story_id,user_id,emoji'}).catch(()=>{});
+    sb.from('story_reactions').upsert({story_id:story.id,user_id:ME.id,emoji},{onConflict:'story_id,user_id,emoji'}).then(({error})=>{if(error)console.log('story rxn save err:',error.message,error.code);});
     if(story.user_id!==ME.id){
       sb.from('messages').insert({sender_id:ME.id,receiver_id:story.user_id,content:emoji+' reacted to your story'}).catch(()=>{});
     }
