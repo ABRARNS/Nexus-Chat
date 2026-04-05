@@ -2845,17 +2845,10 @@ function markRead(){notifs.forEach(n=>n.read=true);renderNotifs();}
 // -- NOTIF PROMPT BANNER --
 async function checkShowNotifBanner(){
   if(localStorage.getItem('notif_banner_dismissed_v3'))return;
-  try{
-    if(!window.OneSignalDeferred)return;
-    OneSignalDeferred.push(async function(OneSignal){
-      const opted=await OneSignal.User.PushSubscription.optedIn;
-      if(!opted){
-        setTimeout(()=>{
-          document.getElementById('notif-prompt-bar')?.classList.add('on');
-        },3000);
-      }
-    });
-  }catch(e){}
+  if(Notification.permission==='granted')return; // already enabled
+  setTimeout(()=>{
+    document.getElementById('notif-prompt-bar')?.classList.add('on');
+  },2000);
 }
 
 function dismissNotifBanner(){
@@ -3581,17 +3574,16 @@ let myStoryReactions=new Set(); // emojis I reacted with on current story
 async function loadStoryReactions(storyId){
   currentStoryReactions={};
   myStoryReactions=new Set();
-  try{
-    const{data,error}=await sb.from('story_reactions').select('emoji,user_id').eq('story_id',storyId);
-    if(error){console.log('story rxn error:',error.message);renderStoryRxnBar();return;}
-    (data||[]).forEach(r=>{
-      const key=storyRxnMap[r.emoji];
-      if(!key)return;
-      if(!currentStoryReactions[key])currentStoryReactions[key]=new Set();
-      currentStoryReactions[key].add(r.user_id);
-      if(String(r.user_id)===String(ME.id))myStoryReactions.add(key);
-    });
-  }catch(e){console.log('story rxn catch:',e);}
+  const{data,error}=await sb.from('story_reactions').select('emoji,user_id').eq('story_id',storyId);
+  if(error){console.log('story rxn err:',error.message,error.code);renderStoryRxnBar();return;}
+  console.log('story rxn data:',data?.length,'for story:',storyId);
+  (data||[]).forEach(r=>{
+    const key=storyRxnMap[r.emoji];
+    if(!key)return;
+    if(!currentStoryReactions[key])currentStoryReactions[key]=new Set();
+    currentStoryReactions[key].add(r.user_id);
+    if(String(r.user_id)===String(ME.id))myStoryReactions.add(key);
+  });
   renderStoryRxnBar();
 }
 
