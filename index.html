@@ -3844,6 +3844,10 @@ window.addEventListener('beforeinstallprompt',e=>{
 })();
 
 init();
+  OneSignal.init({
+  serviceWorkerPath: '/Nexus-Chat/OneSignalSDKWorker.js',
+  serviceWorkerUpdaterPath: '/Nexus-Chat/OneSignalSDKUpdaterWorker.js'
+});
 </script>
 </body>
 </html>
