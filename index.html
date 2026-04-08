@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
-<title>NEXUS-CHAT v5.1 — Real Social Network</title>
+<title>NEXUS-CHAT — Real Social Network</title>
 <meta name="description" content="NEXUS — real-time social network.">
 <meta name="theme-color" content="#0a0a12">
 <link rel="manifest" href="/Nexus-Chat/manifest.json">
@@ -65,8 +65,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .srxn-btn{background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:100px;min-width:48px;height:44px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 12px;transition:all .2s;color:#fff}
 .srxn-btn.active{background:rgba(255,255,255,.35);border-color:rgba(255,255,255,.7)}
 .srxn-count{font-size:12px;font-weight:700;font-family:monospace;min-width:14px}
-.sv-rxn-sum-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:100px;padding:4px 10px;font-size:14px;display:inline-flex;align-items:center;gap:4px;color:#fff}
-.sv-rxn-sum-chip span{font-size:12px;font-weight:700;font-family:monospace}
+.sv-rxn-sum-chip{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);border-radius:100px;padding:5px 12px;font-size:15px;display:inline-flex;align-items:center;gap:5px;color:#fff}
+.sv-rxn-sum-chip span{font-size:13px;font-weight:700;font-family:monospace}
 
 /* -- NOTIF PROMPT BANNER -- */
 #notif-prompt-bar{position:fixed;top:0;left:0;right:0;z-index:600;background:linear-gradient(135deg,rgba(181,77,255,.95),rgba(0,255,225,.95));padding:10px 16px;display:flex;align-items:center;gap:12px;transform:translateY(-100%);transition:transform .4s cubic-bezier(.4,0,.2,1)}
@@ -955,46 +955,47 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="story-tap-right" onclick="nextStory()"></div>
   </div>
   <div class="story-views-bar" id="sv-views"></div>
-  <!-- story bottom bar -->
-  <div id="story-bottom-bar" style="background:linear-gradient(to top,rgba(0,0,0,.72),transparent);padding:0 0 6px">
-    <!-- owner: reaction summary row -->
-    <div id="sv-owner-rxn-summary" style="display:none;padding:8px 16px 4px;gap:6px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:11px;color:rgba(255,255,255,.5);font-family:var(--mono);margin-right:4px">reactions</span>
-      <span id="sv-rxn-sum-fire"  style="display:none" class="sv-rxn-sum-chip">🔥<span></span></span>
-      <span id="sv-rxn-sum-lol"   style="display:none" class="sv-rxn-sum-chip">😂<span></span></span>
-      <span id="sv-rxn-sum-wow"   style="display:none" class="sv-rxn-sum-chip">😮<span></span></span>
-      <span id="sv-rxn-sum-angry" style="display:none" class="sv-rxn-sum-chip">😡<span></span></span>
-      <span id="sv-rxn-sum-down"  style="display:none" class="sv-rxn-sum-chip">👎<span></span></span>
-    </div>
-    <!-- viewer: interactive reactions -->
-    <div id="story-rxn-bar" style="display:flex;gap:6px;flex:1;justify-content:center;padding:8px 16px 4px">
+  <!-- owner: reaction summary (read-only, shown instead of interactive bar) -->
+  <div id="sv-owner-rxn-summary" style="display:none;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 16px 2px;justify-content:center">
+    <span style="font-size:11px;color:rgba(255,255,255,.45);font-family:var(--mono);width:100%;text-align:center;margin-bottom:2px">reactions from viewers</span>
+    <span id="sv-rxn-sum-fire"  style="display:none" class="sv-rxn-sum-chip">🔥<span></span></span>
+    <span id="sv-rxn-sum-lol"   style="display:none" class="sv-rxn-sum-chip">😂<span></span></span>
+    <span id="sv-rxn-sum-wow"   style="display:none" class="sv-rxn-sum-chip">😮<span></span></span>
+    <span id="sv-rxn-sum-angry" style="display:none" class="sv-rxn-sum-chip">😡<span></span></span>
+    <span id="sv-rxn-sum-down"  style="display:none" class="sv-rxn-sum-chip">👎<span></span></span>
+  </div>
+  <!-- viewer: interactive reactions + comment + delete -->
+  <div style="display:flex;align-items:center;gap:8px;padding:6px 12px 10px;background:linear-gradient(to top,rgba(0,0,0,.6),transparent)">
+    <div id="story-rxn-bar" style="display:flex;gap:5px;flex:1;justify-content:center">
       <button onclick="reactToStory('🔥')" id="srxn-fire"  class="srxn-btn">🔥<span id="srxn-count-fire"  class="srxn-count"></span></button>
       <button onclick="reactToStory('😂')" id="srxn-lol"   class="srxn-btn">😂<span id="srxn-count-lol"   class="srxn-count"></span></button>
       <button onclick="reactToStory('😮')" id="srxn-wow"   class="srxn-btn">😮<span id="srxn-count-wow"   class="srxn-count"></span></button>
       <button onclick="reactToStory('😡')" id="srxn-angry" class="srxn-btn">😡<span id="srxn-count-angry" class="srxn-count"></span></button>
       <button onclick="reactToStory('👎')" id="srxn-down"  class="srxn-btn">👎<span id="srxn-count-down"  class="srxn-count"></span></button>
     </div>
-    <!-- comment toggle + delete row -->
-    <div style="display:flex;align-items:center;padding:4px 16px 6px;gap:8px">
-      <button onclick="toggleStoryComments()" id="sv-comment-toggle-btn"
-        style="flex:1;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:100px;height:38px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">
-        💬 <span id="sv-comment-count">Comments</span>
-      </button>
-      <div id="sv-delete-wrap" style="display:none">
-        <button onclick="deleteCurrentStory()" style="background:rgba(255,45,120,.2);border:1px solid rgba(255,45,120,.4);border-radius:var(--r8);color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:600">🗑</button>
-      </div>
+    <button onclick="toggleStoryComments()" id="sv-cmt-btn"
+      style="background:rgba(255,255,255,.13);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22);border-radius:100px;height:44px;min-width:44px;padding:0 10px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:var(--font);display:none;align-items:center;justify-content:center;gap:4px;flex-shrink:0">
+      💬<span id="sv-cmt-count" style="font-size:12px;font-family:monospace"></span>
+    </button>
+    <div id="sv-delete-wrap" style="display:none">
+      <button onclick="deleteCurrentStory()" style="background:rgba(255,45,120,.2);border:1px solid rgba(255,45,120,.4);border-radius:var(--r8);color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:600">🗑</button>
     </div>
-    <!-- comment panel (slides up) -->
-    <div id="sv-comment-panel" style="display:none;flex-direction:column;max-height:55vh;background:rgba(10,10,20,.96);border-radius:20px 20px 0 0;border-top:1px solid rgba(255,255,255,.08);overflow:hidden">
-      <div style="text-align:center;padding:8px 0 4px"><div style="width:36px;height:4px;background:rgba(255,255,255,.2);border-radius:4px;margin:0 auto"></div></div>
-      <div style="padding:4px 16px 8px;font-size:12px;font-weight:700;color:rgba(255,255,255,.5);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Comments</div>
-      <div id="sv-comments-list" style="flex:1;overflow-y:auto;padding:0 14px 8px;display:flex;flex-direction:column;gap:10px"></div>
-      <div style="padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:8px;align-items:center">
-        <div id="sv-my-av-small" style="width:30px;height:30px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0"></div>
-        <input id="sv-comment-input" class="comment-input" placeholder="Add a comment…" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff" onkeydown="if(event.key==='Enter')submitStoryComment()">
-        <button onclick="submitStoryComment()" class="comment-send" style="flex-shrink:0">➤</button>
-      </div>
-    </div>
+  </div>
+</div>
+
+<!-- STORY COMMENT PANEL — fixed overlay, outside story-viewer so overflow:hidden doesn't clip it -->
+<div id="sv-comment-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:850;flex-direction:column;max-height:60vh;background:rgba(8,8,18,.97);border-radius:20px 20px 0 0;border-top:1px solid rgba(255,255,255,.09);backdrop-filter:blur(24px)">
+  <div style="text-align:center;padding:8px 0 4px;cursor:pointer" onclick="toggleStoryComments()">
+    <div style="width:36px;height:4px;background:rgba(255,255,255,.18);border-radius:4px;margin:0 auto"></div>
+  </div>
+  <div style="padding:2px 16px 10px;font-size:12px;font-weight:700;color:rgba(255,255,255,.4);font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em">Comments</div>
+  <div id="sv-comments-list" style="flex:1;overflow-y:auto;padding:0 14px 8px;display:flex;flex-direction:column;gap:10px;min-height:60px"></div>
+  <div style="padding:10px 14px calc(14px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.06);display:flex;gap:8px;align-items:center">
+    <div id="sv-my-av-small" style="width:30px;height:30px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;flex-shrink:0"></div>
+    <input id="sv-comment-input" class="comment-input" placeholder="Add a comment…"
+      style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:var(--r99)"
+      onkeydown="if(event.key==='Enter')submitStoryComment()">
+    <button onclick="submitStoryComment()" class="comment-send" style="flex-shrink:0">➤</button>
   </div>
 </div>
 
@@ -2876,18 +2877,18 @@ function markRead(){notifs.forEach(n=>n.read=true);renderNotifs();}
 // -- NOTIF PROMPT BANNER --
 async function checkShowNotifBanner(){
   if(localStorage.getItem('notif_banner_dismissed_v3'))return;
-  const showBanner=()=>setTimeout(()=>document.getElementById('notif-prompt-bar')?.classList.add('on'),2000);
+  const show=()=>setTimeout(()=>document.getElementById('notif-prompt-bar')?.classList.add('on'),2000);
   if(window.OneSignalDeferred){
     OneSignalDeferred.push(async function(OneSignal){
       try{
         const opted=await OneSignal.User.PushSubscription.optedIn;
-        if(!opted)showBanner();
+        if(!opted)show();
       }catch(e){
-        if(typeof Notification==='undefined'||Notification.permission!=='granted')showBanner();
+        if(typeof Notification==='undefined'||Notification.permission!=='granted')show();
       }
     });
   }else{
-    if(typeof Notification==='undefined'||Notification.permission!=='granted')showBanner();
+    if(typeof Notification==='undefined'||Notification.permission!=='granted')show();
   }
 }
 
@@ -3204,20 +3205,23 @@ function showCurrentStory(){
   storyTimer=setTimeout(nextStory,5000);
   // Load reactions for this story
   loadStoryReactions(story.id);
-  // Load comments
+  // Pre-load comment count silently
   loadStoryComments(story.id);
   // Record view
   if(story.user_id!==ME.id){
     sb.from('story_views').upsert({story_id:story.id,user_id:ME.id}).catch(()=>{});
   }
-  // Owner: show reaction summary + delete; hide interactive rxn bar
-  const isOwner=String(story.user_id)===String(ME.id);
-  if(delWrap)delWrap.style.display=isOwner?'block':'none';
+  // Show delete button only for own stories
+  if(delWrap)delWrap.style.display=String(story.user_id)===String(ME.id)?'block':'none';
   const rxnBar=document.getElementById('story-rxn-bar');
   const ownerSummary=document.getElementById('sv-owner-rxn-summary');
+  const isOwner=String(story.user_id)===String(ME.id);
   if(rxnBar)rxnBar.style.display=isOwner?'none':'flex';
   if(ownerSummary)ownerSummary.style.display=isOwner?'flex':'none';
-  // Reset comment panel on story change
+  // Always show comment button (both owner and viewer)
+  const cmtBtn=document.getElementById('sv-cmt-btn');
+  if(cmtBtn)cmtBtn.style.display='flex';
+  // Close comment panel when switching stories
   const panel=document.getElementById('sv-comment-panel');
   if(panel)panel.style.display='none';
 }
@@ -3325,12 +3329,16 @@ async function checkInviteCode(){
   if(!code||!ME)return;
   const{data:group}=await sb.from('group_chats').select('*').eq('invite_code',code).single();
   if(!group){showToast('❌ Invalid invite link');return;}
-  await sb.rpc('add_group_member',{p_group_id:group.id,p_user_id:ME.id,p_role:'member'}).catch(()=>{});
+  // Use upsert so re-joining after leaving works and duplicate errors are swallowed
+  const{error}=await sb.from('group_members').upsert(
+    {group_id:group.id,user_id:ME.id,role:'member'},
+    {onConflict:'group_id,user_id',ignoreDuplicates:true}
+  );
+  if(error&&error.code!=='23505'){console.log('join err:',error.message);}
   showToast(`✅ Joined ${group.name}!`);
   await loadGroups();
   setView('groups',document.getElementById('nav-groups'));
   openGroupChat(group.id);
-  // clean URL
   window.history.replaceState({},document.title,window.location.pathname);
 }
 
@@ -3636,7 +3644,8 @@ async function loadStoryReactions(storyId){
 }
 
 function renderStoryRxnBar(){
-  const isOwner=currentStories[currentStoryIdx]?.stories[currentUserStoryIdx]?.user_id===ME.id;
+  const story=currentStories[currentStoryIdx]?.stories[currentUserStoryIdx];
+  const isOwner=story&&String(story.user_id)===String(ME.id);
   ['fire','lol','wow','angry','down'].forEach(key=>{
     const btn=document.getElementById('srxn-'+key);
     const countEl=document.getElementById('srxn-count-'+key);
@@ -3649,7 +3658,7 @@ function renderStoryRxnBar(){
     if(chip){
       chip.style.display=count>0?'inline-flex':'none';
       const sp=chip.querySelector('span');
-      if(sp)sp.textContent=count>0?count:'';
+      if(sp)sp.textContent=count>0?String(count):'';
     }
   });
 }
@@ -3678,12 +3687,11 @@ async function reactToStory(emoji){
     floatEmoji(emoji);
     if(btn2){btn2.style.animation='popIn .4s ease';setTimeout(()=>{btn2.style.animation='';},400);}
     renderStoryRxnBar();
-    // delete any existing reaction first, then insert fresh (upsert requires a DB unique constraint)
     sb.from('story_reactions').delete()
       .eq('story_id',story.id).eq('user_id',ME.id).eq('emoji',emoji)
       .then(()=>{
         sb.from('story_reactions').insert({story_id:story.id,user_id:ME.id,emoji})
-          .then(({error})=>{if(error)console.log('story rxn save err:',error.message,error.code,error.details);});
+          .then(({error})=>{if(error)console.log('rxn err:',error.message);});
       });
     if(story.user_id!==ME.id){
       sb.from('messages').insert({sender_id:ME.id,receiver_id:story.user_id,content:emoji+' reacted to your story'}).catch(()=>{});
@@ -3699,62 +3707,74 @@ function floatEmoji(emoji){
   setTimeout(()=>el.remove(),1200);
 }
 
-// -- STORY COMMENTS --
-let storyCommentsCache={};// storyId -> [{id,user_id,content,created_at,profile}]
+// ── STORY COMMENTS ──────────────────────────────────────────────
+const storyCommentsCache={};
 
 function toggleStoryComments(){
   const panel=document.getElementById('sv-comment-panel');
   if(!panel)return;
-  const visible=panel.style.display==='flex';
-  panel.style.display=visible?'none':'flex';
-  if(!visible){
+  const open=panel.style.display==='flex';
+  panel.style.display=open?'none':'flex';
+  if(!open){
+    // populate my avatar in input row
+    const av=document.getElementById('sv-my-av-small');
+    if(av){
+      av.style.background=uc(ME.username||'?');
+      av.innerHTML=ME.avatar_url
+        ?`<img src="${ME.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`
+        :`<span style="color:#000">${(ME.username||'?')[0].toUpperCase()}</span>`;
+    }
     const userGroup=currentStories[currentStoryIdx];
     const story=userGroup?.stories[currentUserStoryIdx];
     if(story)loadStoryComments(story.id,true);
-    // populate my avatar
-    const myAv=document.getElementById('sv-my-av-small');
-    if(myAv){
-      myAv.style.background=uc(ME.username||'?');
-      myAv.innerHTML=ME.avatar_url?`<img src="${ME.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:`<span>${(ME.username||'?')[0].toUpperCase()}</span>`;
-    }
-    setTimeout(()=>document.getElementById('sv-comment-input')?.focus(),100);
+    setTimeout(()=>document.getElementById('sv-comment-input')?.focus(),150);
   }
 }
 
 async function loadStoryComments(storyId,force=false){
   if(!storyId)return;
-  if(!force&&storyCommentsCache[storyId]){renderStoryComments(storyCommentsCache[storyId]);return;}
-  const{data,error}=await sb.from('story_comments').select('id,user_id,content,created_at,profiles(id,username,avatar_url)').eq('story_id',storyId).order('created_at',{ascending:true});
+  if(!force&&storyCommentsCache[storyId]!==undefined){
+    _renderStoryComments(storyCommentsCache[storyId],storyId);
+    return;
+  }
+  const{data,error}=await sb.from('story_comments')
+    .select('id,user_id,content,created_at,profiles(id,username,avatar_url)')
+    .eq('story_id',storyId)
+    .order('created_at',{ascending:true});
   if(error){console.log('story comments err:',error.message);return;}
   const rows=(data||[]).map(r=>({...r,profile:r.profiles||{}}));
   storyCommentsCache[storyId]=rows;
-  // update comment count button
-  const userGroup=currentStories[currentStoryIdx];
-  const curStory=userGroup?.stories[currentUserStoryIdx];
-  if(curStory&&String(curStory.id)===String(storyId)){
-    const btn=document.getElementById('sv-comment-count');
-    if(btn)btn.textContent=rows.length>0?rows.length+' Comments':'Comments';
-    renderStoryComments(rows);
-  }
+  _renderStoryComments(rows,storyId);
 }
 
-function renderStoryComments(rows){
+function _renderStoryComments(rows,storyId){
+  // update count badge on button
+  const cur=currentStories[currentStoryIdx]?.stories[currentUserStoryIdx];
+  if(cur&&String(cur.id)===String(storyId)){
+    const badge=document.getElementById('sv-cmt-count');
+    if(badge)badge.textContent=rows.length>0?' '+rows.length:'';
+  }
   const list=document.getElementById('sv-comments-list');
   if(!list)return;
-  if(!rows.length){list.innerHTML=`<div style="text-align:center;color:rgba(255,255,255,.3);font-size:13px;padding:20px 0">No comments yet. Be first!</div>`;return;}
+  if(!rows.length){
+    list.innerHTML=`<div style="text-align:center;color:rgba(255,255,255,.28);font-size:13px;padding:22px 0">No comments yet</div>`;
+    return;
+  }
   list.innerHTML=rows.map(c=>{
     const pf=c.profile||{};
     const avBg=uc(pf.username||'?');
-    const avHtml=pf.avatar_url?`<img src="${pf.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:`<span>${(pf.username||'?')[0].toUpperCase()}</span>`;
-    const isOwner=String(c.user_id)===String(ME.id);
-    return`<div class="comment-item" style="align-items:flex-start">
-      <div class="comment-av" style="background:${avBg};width:28px;height:28px;min-width:28px;color:#000">${avHtml}</div>
-      <div class="comment-body" style="background:rgba(255,255,255,.07);border-radius:12px;padding:8px 12px;flex:1">
-        <div class="comment-name" style="color:rgba(0,255,225,.85)">@${esc(pf.username||'?')}</div>
-        <div class="comment-text" style="color:rgba(255,255,255,.9)">${esc(c.content)}</div>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:3px">
-          <span class="comment-time" style="color:rgba(255,255,255,.3)">${timeAgo(c.created_at)}</span>
-          ${isOwner?`<span onclick="deleteStoryComment('${c.id}')" style="font-size:9.5px;color:rgba(255,80,80,.6);cursor:pointer;font-family:var(--mono)">delete</span>`:''}
+    const avHtml=pf.avatar_url
+      ?`<img src="${pf.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`
+      :`<span style="color:#000">${(pf.username||'?')[0].toUpperCase()}</span>`;
+    const mine=String(c.user_id)===String(ME.id);
+    return`<div class="comment-item">
+      <div class="comment-av" style="background:${avBg};color:#000">${avHtml}</div>
+      <div class="comment-body">
+        <div class="comment-name">@${esc(pf.username||'?')}</div>
+        <div class="comment-text">${esc(c.content)}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+          <span class="comment-time">${timeAgo(c.created_at)}</span>
+          ${mine?`<span onclick="deleteStoryComment('${c.id}','${storyId}')" style="font-size:9.5px;color:rgba(255,80,80,.55);cursor:pointer;font-family:var(--mono)">delete</span>`:''}
         </div>
       </div>
     </div>`;
@@ -3769,33 +3789,43 @@ async function submitStoryComment(){
   const userGroup=currentStories[currentStoryIdx];
   const story=userGroup?.stories[currentUserStoryIdx];
   if(!story)return;
-  inp.value='';
-  const{data,error}=await sb.from('story_comments').insert({story_id:story.id,user_id:ME.id,content:text}).select('id,user_id,content,created_at').single();
-  if(error){console.log('comment err:',error.message);inp.value=text;return;}
-  // optimistic: add to cache
+  inp.value='';inp.disabled=true;
+  const{data,error}=await sb.from('story_comments')
+    .insert({story_id:story.id,user_id:ME.id,content:text})
+    .select('id,user_id,content,created_at').single();
+  inp.disabled=false;
+  if(error){console.log('comment err:',error.message);inp.value=text;showToast('❌ '+error.message);return;}
   const row={...data,profile:{id:ME.id,username:ME.username,avatar_url:ME.avatar_url}};
   if(!storyCommentsCache[story.id])storyCommentsCache[story.id]=[];
   storyCommentsCache[story.id].push(row);
-  renderStoryComments(storyCommentsCache[story.id]);
-  const btn=document.getElementById('sv-comment-count');
-  if(btn)btn.textContent=(storyCommentsCache[story.id].length)+' Comments';
+  _renderStoryComments(storyCommentsCache[story.id],story.id);
   // notify story owner
   if(story.user_id!==ME.id){
-    sb.from('messages').insert({sender_id:ME.id,receiver_id:story.user_id,content:'💬 commented on your story: '+text.slice(0,60)}).catch(()=>{});
+    sb.from('messages').insert({
+      sender_id:ME.id,receiver_id:story.user_id,
+      content:`💬 commented on your story: ${text.slice(0,60)}`
+    }).catch(()=>{});
   }
 }
 
-async function deleteStoryComment(commentId){
+async function deleteStoryComment(commentId,storyId){
   if(!confirm('Delete this comment?'))return;
   const{error}=await sb.from('story_comments').delete().eq('id',commentId).eq('user_id',ME.id);
   if(error){showToast('❌ '+error.message);return;}
+  if(storyCommentsCache[storyId])
+    storyCommentsCache[storyId]=storyCommentsCache[storyId].filter(c=>String(c.id)!==String(commentId));
   const userGroup=currentStories[currentStoryIdx];
   const story=userGroup?.stories[currentUserStoryIdx];
-  if(story&&storyCommentsCache[story.id])storyCommentsCache[story.id]=storyCommentsCache[story.id].filter(c=>String(c.id)!==String(commentId));
-  if(story)renderStoryComments(storyCommentsCache[story.id]||[]);
-  const btn=document.getElementById('sv-comment-count');
-  if(btn&&story)btn.textContent=(storyCommentsCache[story.id]?.length||0)+' Comments';
+  if(story)_renderStoryComments(storyCommentsCache[story.id]||[],story.id);
 }
+
+// close comment panel when story viewer closes
+const _origCloseStoryViewer=closeStoryViewer;
+closeStoryViewer=function(){
+  _origCloseStoryViewer();
+  const p=document.getElementById('sv-comment-panel');
+  if(p)p.style.display='none';
+};
 
 function resetStoryRxnCounts(){
   currentStoryReactions={};
