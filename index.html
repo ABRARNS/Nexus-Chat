@@ -1254,6 +1254,14 @@ const URL_REGEX=/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{
 // -- INIT --
 async function init(){
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/Nexus-Chat/sw.js').catch(()=>{});
+  // Keep ME in sync if token refreshes mid-session
+  sb.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='TOKEN_REFRESHED'&&session?.user&&ME){
+      // just keep ME.id aligned — no need to reload profile
+      ME.id=session.user.id;
+    }
+    if(event==='SIGNED_OUT'){ME=null;}
+  });
   try{
     const{data:{session}}=await sb.auth.getSession();
     if(session?.user){await loadMe(session.user.id);showApp();}
@@ -1262,8 +1270,14 @@ async function init(){
 }
 
 async function loadMe(uid){
-  const{data}=await sb.from('profiles').select('*').eq('id',uid).single();
-  ME=data||{id:uid,username:'user',bio:'',avatar_url:''};
+  // Retry up to 3 times — profiles table occasionally slow on cold start
+  for(let i=0;i<3;i++){
+    const{data,error}=await sb.from('profiles').select('*').eq('id',uid).single();
+    if(data){ME=data;return;}
+    if(i<2)await new Promise(r=>setTimeout(r,600));
+  }
+  // Fallback so ME.id is always set even if profile fetch fails
+  ME={id:uid,username:'user',bio:'',avatar_url:''};
 }
 
 async function showApp(){
@@ -1841,6 +1855,7 @@ function scrollBottom(id,smooth=false){const w=document.getElementById(id);if(w)
 
 // -- SEND DM --
 async function sendMsg(){
+  if(!ME?.id){showToast('⚠️ Still loading, try again');return;}
   const inp=document.getElementById('msg-input');
   const text=inp.value.trim();
   if((!text&&!pendingImg)||!currentChat)return;
@@ -2463,6 +2478,7 @@ function appendGroupMsg(msg,senderInfo){
 
 // -- SEND GROUP MESSAGE --
 async function sendGroupMsg(){
+  if(!ME?.id){showToast('⚠️ Still loading, try again');return;}
   const inp=document.getElementById('group-msg-input');
   const text=inp.value.trim();
   if((!text&&!pendingGroupImg)||!currentGroup)return;
