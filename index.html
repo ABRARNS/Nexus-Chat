@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
-<title>NEXUS-CHAT v5.2 — Real Social Network</title>
+<title>NEXUS-CHAT v5.1 — Real Social Network</title>
 
 <!-- SEO -->
 <meta name="description" content="NEXUS is a real-time social network — DMs, group chats, 24-hour stories, a public feed, and more. Built for people who want a fast, minimal, distraction-free social experience.">
@@ -954,6 +954,20 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
           <span style="font-size:10px;font-weight:400;color:var(--t4);font-family:var(--mono)">// from people you follow</span>
         </div>
         <div class="stories-bar" id="stories-bar"></div>
+
+        <!-- Adsterra Ad — between stories and composer -->
+        <div id="adsterra-feed-slot" style="display:flex;justify-content:center;align-items:center;margin:12px 0 8px;overflow:hidden;border-radius:var(--r12)">
+          <script>
+            atOptions = {
+              'key' : 'e7cc6ebabee63db7efff8b0ccbdce181',
+              'format' : 'iframe',
+              'height' : 250,
+              'width' : 300,
+              'params' : {}
+            };
+          </script>
+          <script src="https://www.highperformanceformat.com/e7cc6ebabee63db7efff8b0ccbdce181/invoke.js"></script>
+        </div>
 
         <div class="composer">
           <div class="composer-av" id="feed-av"></div>
@@ -3242,9 +3256,9 @@ function showCurrentStory(){
   const isOwner=String(story.user_id)===String(ME.id);
   if(rxnBar)rxnBar.style.display=isOwner?'none':'flex';
   if(ownerSummary)ownerSummary.style.display=isOwner?'flex':'none';
-  // Always show comment button (both owner and viewer)
+  // Show comment button for EVERYONE — owner reads comments, viewers add them
   const cmtBtn=document.getElementById('sv-cmt-btn');
-  if(cmtBtn)cmtBtn.style.display=isOwner?'flex':'none';
+  if(cmtBtn)cmtBtn.style.display='flex';
   // Close comment panel when switching stories
   const panel=document.getElementById('sv-comment-panel');
   if(panel)panel.style.display='none';
