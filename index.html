@@ -956,19 +956,8 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
         </div>
         <div class="stories-bar" id="stories-bar"></div>
 
-        <!-- Adsterra Ad — between stories and composer -->
-        <div id="adsterra-feed-slot" style="display:flex;justify-content:center;align-items:center;margin:12px 0 8px;overflow:hidden;border-radius:var(--r12)">
-          <script>
-            atOptions = {
-              'key' : 'e7cc6ebabee63db7efff8b0ccbdce181',
-              'format' : 'iframe',
-              'height' : 250,
-              'width' : 300,
-              'params' : {}
-            };
-          </script>
-          <script src="https://www.highperformanceformat.com/e7cc6ebabee63db7efff8b0ccbdce181/invoke.js"></script>
-        </div>
+        <!-- Adsterra Ad — lazy-loaded when feed tab opens -->
+        <div id="adsterra-feed-slot" style="display:flex;justify-content:center;align-items:center;margin:12px 0 8px;min-height:0;border-radius:var(--r12);overflow:hidden"></div>
 
         <div class="composer">
           <div class="composer-av" id="feed-av"></div>
@@ -3948,6 +3937,23 @@ function openLbox(url){document.getElementById('lbox-img').src=url;document.getE
 function closeLbox(){document.getElementById('lbox').classList.remove('on');}
 
 // -- NAV --
+// -- ADSTERRA LAZY LOADER --
+let _adLoaded=false;
+function loadAdsterra(){
+  if(_adLoaded)return;
+  const slot=document.getElementById('adsterra-feed-slot');
+  if(!slot)return;
+  _adLoaded=true;
+  // inject config first
+  const cfg=document.createElement('script');
+  cfg.text=`atOptions={'key':'e7cc6ebabee63db7efff8b0ccbdce181','format':'iframe','height':250,'width':300,'params':{}};`;
+  slot.appendChild(cfg);
+  // inject invoke script
+  const inv=document.createElement('script');
+  inv.src='https://www.highperformanceformat.com/e7cc6ebabee63db7efff8b0ccbdce181/invoke.js';
+  slot.appendChild(inv);
+}
+
 function setView(id,el){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
   if(el)el.classList.add('on');
@@ -3956,7 +3962,7 @@ function setView(id,el){
   document.getElementById('view-people').classList.toggle('on',id==='people');
   document.getElementById('view-feed').classList.toggle('on',id==='feed');
   if(id==='people'){peopleTab='all';switchPeopleTab('all');['all','following','followers','visitors'].forEach(t=>{document.getElementById('ptab-'+t)?.classList.toggle('on',t==='all');});}
-  if(id==='feed')loadFeed();
+  if(id==='feed'){loadFeed();loadAdsterra();}
   if(id==='groups')loadGroups();
   const map={chat:'bn-chat',groups:'bn-groups',people:'bn-people',feed:'bn-feed'};
   if(map[id])bnActive(map[id]);
