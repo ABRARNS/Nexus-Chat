@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
-<title>NEXUS-CHAT — Real Social Network</title>
+<title>NEXUS-CHAT v5.1 — Real Social Network</title>
 
 <!-- SEO -->
 <meta name="description" content="NEXUS is a real-time social network — DMs, group chats, 24-hour stories, a public feed, and more. Built for people who want a fast, minimal, distraction-free social experience.">
@@ -87,7 +87,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 @keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-120px) scale(1.5);opacity:0}}
 @keyframes popIn{0%{transform:scale(1)}50%{transform:scale(1.5)}100%{transform:scale(1)}}
 @keyframes popOut{0%{transform:scale(1)}50%{transform:scale(0.7)}100%{transform:scale(1)}}
-.srxn-btn{background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:100px;min-width:48px;height:44px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 12px;transition:all .2s;color:#fff}
+.srxn-btn{background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:100px;flex:1;height:46px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;padding:0 4px;transition:all .2s;color:#fff;min-width:0}
 .srxn-btn.active{background:rgba(255,255,255,.35);border-color:rgba(255,255,255,.7)}
 .srxn-count{font-size:12px;font-weight:700;font-family:monospace;min-width:14px}
 .sv-rxn-sum-chip{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);border-radius:100px;padding:5px 12px;font-size:15px;display:inline-flex;align-items:center;gap:5px;color:#fff}
@@ -993,20 +993,24 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <span id="sv-rxn-sum-down"  style="display:none" class="sv-rxn-sum-chip">👎<span></span></span>
   </div>
   <!-- viewer: interactive reactions + comment + delete -->
-  <div style="display:flex;align-items:center;gap:8px;padding:6px 12px 10px;background:linear-gradient(to top,rgba(0,0,0,.6),transparent)">
-    <div id="story-rxn-bar" style="display:flex;gap:5px;flex:1;justify-content:center">
+  <div style="background:linear-gradient(to top,rgba(0,0,0,.75),transparent);padding:6px 0 10px">
+    <!-- emoji row — full width, evenly spaced -->
+    <div id="story-rxn-bar" style="display:flex;gap:4px;justify-content:space-evenly;padding:0 10px 6px">
       <button onclick="reactToStory('🔥')" id="srxn-fire"  class="srxn-btn">🔥<span id="srxn-count-fire"  class="srxn-count"></span></button>
       <button onclick="reactToStory('😂')" id="srxn-lol"   class="srxn-btn">😂<span id="srxn-count-lol"   class="srxn-count"></span></button>
       <button onclick="reactToStory('😮')" id="srxn-wow"   class="srxn-btn">😮<span id="srxn-count-wow"   class="srxn-count"></span></button>
       <button onclick="reactToStory('😡')" id="srxn-angry" class="srxn-btn">😡<span id="srxn-count-angry" class="srxn-count"></span></button>
       <button onclick="reactToStory('👎')" id="srxn-down"  class="srxn-btn">👎<span id="srxn-count-down"  class="srxn-count"></span></button>
     </div>
-    <button onclick="toggleStoryComments()" id="sv-cmt-btn"
-      style="background:rgba(255,255,255,.13);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22);border-radius:100px;height:44px;min-width:44px;padding:0 10px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0">
-      💬<span id="sv-cmt-count" style="font-size:12px;font-family:monospace"></span>
-    </button>
-    <div id="sv-delete-wrap" style="display:none">
-      <button onclick="deleteCurrentStory()" style="background:rgba(255,45,120,.2);border:1px solid rgba(255,45,120,.4);border-radius:var(--r8);color:#fff;padding:8px 12px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:600">🗑</button>
+    <!-- comment + delete row -->
+    <div style="display:flex;align-items:center;gap:8px;padding:0 10px">
+      <button onclick="toggleStoryComments()" id="sv-cmt-btn"
+        style="background:rgba(255,255,255,.13);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22);border-radius:100px;height:40px;flex:1;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px">
+        💬 <span id="sv-cmt-count" style="font-size:12px;font-family:monospace"></span>
+      </button>
+      <div id="sv-delete-wrap" style="display:none">
+        <button onclick="deleteCurrentStory()" style="background:rgba(255,45,120,.2);border:1px solid rgba(255,45,120,.4);border-radius:var(--r8);color:#fff;padding:8px 14px;font-size:13px;cursor:pointer;font-family:var(--font);font-weight:600">🗑</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3717,27 +3721,42 @@ async function reactToStory(emoji){
 
   const btn2=document.getElementById('srxn-'+key);
   if(isMine){
-    // Unlike - animate first then DB
+    // Unlike - update UI first then DB
     myStoryReactions.delete(key);
     if(currentStoryReactions[key])currentStoryReactions[key].delete(ME.id);
     if(btn2){btn2.style.animation='popOut .3s ease';setTimeout(()=>{btn2.style.animation='';},300);}
     renderStoryRxnBar();
-    sb.from('story_reactions').delete().eq('story_id',story.id).eq('user_id',ME.id).eq('emoji',emoji).catch(()=>{});
+    const{error:delErr}=await sb.from('story_reactions').delete()
+      .eq('story_id',story.id).eq('user_id',ME.id).eq('emoji',emoji);
+    if(delErr){
+      // revert UI if delete failed
+      console.log('rxn delete err:',delErr.message,delErr.code);
+      myStoryReactions.add(key);
+      if(currentStoryReactions[key])currentStoryReactions[key].add(ME.id);
+      renderStoryRxnBar();
+      showToast('❌ Could not remove reaction');
+    }
   }else{
-    // Like - animate first then DB
+    // Like - update UI first then DB
     myStoryReactions.add(key);
     if(!currentStoryReactions[key])currentStoryReactions[key]=new Set();
     currentStoryReactions[key].add(ME.id);
     floatEmoji(emoji);
     if(btn2){btn2.style.animation='popIn .4s ease';setTimeout(()=>{btn2.style.animation='';},400);}
     renderStoryRxnBar();
-    sb.from('story_reactions').delete()
-      .eq('story_id',story.id).eq('user_id',ME.id).eq('emoji',emoji)
-      .then(()=>{
-        sb.from('story_reactions').insert({story_id:story.id,user_id:ME.id,emoji})
-          .then(({error})=>{if(error)console.log('rxn err:',error.message);});
-      });
-    if(story.user_id!==ME.id){
+    // delete any stale row first (in case of duplicate), then insert
+    await sb.from('story_reactions').delete()
+      .eq('story_id',story.id).eq('user_id',ME.id).eq('emoji',emoji);
+    const{error:insErr}=await sb.from('story_reactions')
+      .insert({story_id:story.id,user_id:ME.id,emoji});
+    if(insErr){
+      console.log('rxn insert err:',insErr.message,insErr.code);
+      // revert UI
+      myStoryReactions.delete(key);
+      if(currentStoryReactions[key])currentStoryReactions[key].delete(ME.id);
+      renderStoryRxnBar();
+      showToast('❌ Could not save reaction');
+    } else if(story.user_id!==ME.id){
       sb.from('messages').insert({sender_id:ME.id,receiver_id:story.user_id,content:emoji+' reacted to your story'}).catch(()=>{});
     }
   }
