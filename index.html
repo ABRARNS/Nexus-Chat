@@ -1260,12 +1260,16 @@ const URL_REGEX=/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{
 async function init(){
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/Nexus-Chat/sw.js').catch(()=>{});
 
-  // Clean error params from URL
-  if(window.location.search.includes('error')||window.location.hash.includes('error')){
+  // Only show error if it's a real OAuth error (has error_code param)
+  if(window.location.search.includes('error_code=')||window.location.hash.includes('error_code=')){
     window.history.replaceState({},document.title,window.location.pathname);
     showAuth();
     showErr('Google sign in failed — please try again');
     return;
+  }
+  // Clean any other stray params silently
+  if(window.location.search||window.location.hash){
+    window.history.replaceState({},document.title,window.location.pathname);
   }
 
   // Check for active session (covers normal load AND Google redirect)
