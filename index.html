@@ -1260,28 +1260,56 @@ const URL_REGEX=/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{
 async function init(){
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/Nexus-Chat/sw.js').catch(()=>{});
 
-  // Clean up error params from URL silently (don't show ugly URL to user)
+  // Clean error params from URL
   if(window.location.search.includes('error')||window.location.hash.includes('error')){
     window.history.replaceState({},document.title,window.location.pathname);
+    showAuth();
+    showErr('Google sign in failed — please try again');
+    return;
   }
 
-  // Listen for auth state changes
+  // Check for active session (covers normal load AND Google redirect)
+  const{data:{session}}=await sb.auth.getSession().catch(()=>({data:{session:null}}));
+
+  if(session?.user){
+    await ensureProfile(session.user);
+    await loadMe(session.user.id);
+    showApp();
+    // Clean up any OAuth params from URL
+    if(window.location.hash||window.location.search){
+      window.history.replaceState({},document.title,window.location.pathname);
+    }
+    return;
+  }
+
+  // No session — listen for Google OAuth redirect completing
   sb.auth.onAuthStateChange(async(event,session)=>{
     if(event==='SIGNED_IN'&&session?.user&&!ME){
-      await handleOAuthRedirect();
-    }
-    if(event==='TOKEN_REFRESHED'&&session?.user&&ME){
-      ME.id=session.user.id;
+      window.history.replaceState({},document.title,window.location.pathname);
+      await ensureProfile(session.user);
+      await loadMe(session.user.id);
+      showApp();
     }
     if(event==='SIGNED_OUT'){ME=null;}
   });
 
-  try{
-    const{data:{session}}=await sb.auth.getSession();
-    if(session?.user){await loadMe(session.user.id);showApp();}
-    else showAuth();
-  }catch{showAuth();}
+  showAuth();
 }
+
+// Create profile if first time (Google sign up)
+async function ensureProfile(user){
+  const{data:existing}=await sb.from('profiles').select('id').eq('id',user.id).single();
+  if(!existing){
+    const googleName=user.user_metadata?.full_name||user.user_metadata?.name||'';
+    let username=googleName.toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20)||'user'+Date.now().toString().slice(-6);
+    const{data:taken}=await sb.from('profiles').select('id').eq('username',username).single();
+    if(taken)username=username+Math.floor(Math.random()*999);
+    const avatar=user.user_metadata?.avatar_url||'';
+    await sb.from('profiles').insert({id:user.id,username,bio:'',avatar_url:avatar});
+  }
+}
+
+async function handleOAuthRedirect(){return true;}// kept for compatibility
 
 async function loadMe(uid){
   // Retry up to 3 times — profiles table occasionally slow on cold start
@@ -1354,29 +1382,6 @@ async function signInWithGoogle(){
     btn.disabled=false;
     btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Continue with Google`;
   }
-}
-
-async function handleOAuthRedirect(){
-  const{data:{session},error}=await sb.auth.getSession();
-  if(!session||error)return false;
-  const user=session.user;
-  // Clean URL so the auth params don't stay visible
-  window.history.replaceState({},document.title,window.location.pathname);
-  // Check if profile exists for THIS specific user
-  const{data:existing}=await sb.from('profiles').select('id').eq('id',user.id).single();
-  if(!existing){
-    // First time Google login — auto-create profile
-    const googleName=user.user_metadata?.full_name||user.user_metadata?.name||'';
-    let username=googleName.toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20)||'user'+Date.now().toString().slice(-6);
-    const{data:taken}=await sb.from('profiles').select('id').eq('username',username).single();
-    if(taken)username=username+Math.floor(Math.random()*999);
-    const avatar=user.user_metadata?.avatar_url||'';
-    await sb.from('profiles').insert({id:user.id,username,bio:'',avatar_url:avatar});
-  }
-  // Always load from DB using the session's user ID — never guess
-  await loadMe(user.id);
-  if(!document.getElementById('app').classList.contains('on'))showApp();
-  return true;
 }
 
 function authTab(t){
