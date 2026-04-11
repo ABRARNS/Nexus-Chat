@@ -1382,8 +1382,7 @@ async function signInWithGoogle(){
   const{error}=await sb.auth.signInWithOAuth({
     provider:'google',
     options:{
-      redirectTo:'https://abrarns.github.io/Nexus-Chat/index.html',
-      queryParams:{access_type:'offline',prompt:'select_account'}
+      redirectTo:'https://abrarns.github.io/Nexus-Chat/index.html'
     }
   });
   if(error){
