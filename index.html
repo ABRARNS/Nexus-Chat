@@ -1199,7 +1199,17 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 <script>
 const SURL='https://pvahgjdvgcnkozprszya.supabase.co';
 const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2YWhnamR2Z2Nua296cHJzenlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODI5NDUsImV4cCI6MjA4ODk1ODk0NX0.Yp5Fn5-IHXhToTsI2-Hg2JgXy05RhHhgaAlGY_xbu5g';
-const sb=supabase.createClient(SURL,SKEY);
+// Use implicit flow — designed for SPAs with no server (GitHub Pages)
+// PKCE requires a server callback route to exchange the code; implicit flow
+// puts tokens directly in the URL hash which works perfectly client-side
+const sb=supabase.createClient(SURL,SKEY,{
+  auth:{
+    flowType:'implicit',
+    detectSessionInUrl:true,
+    persistSession:true,
+    autoRefreshToken:true
+  }
+});
 
 // -- AUTH BACKGROUND ANIMATION --
 function initAuthBg(){
@@ -1260,33 +1270,28 @@ const URL_REGEX=/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{
 async function init(){
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/Nexus-Chat/sw.js').catch(()=>{});
 
-  // Only show error if it's a real OAuth error (has error_code param)
+  // Clean error params from URL
   if(window.location.search.includes('error_code=')||window.location.hash.includes('error_code=')){
     window.history.replaceState({},document.title,window.location.pathname);
     showAuth();
     showErr('Google sign in failed — please try again');
     return;
   }
-  // Clean any other stray params silently
-  if(window.location.search||window.location.hash){
-    window.history.replaceState({},document.title,window.location.pathname);
-  }
 
-  // Check for active session (covers normal load AND Google redirect)
+  // Implicit flow: Supabase automatically detects tokens in URL hash
+  // and restores session from localStorage. Just check getSession().
   const{data:{session}}=await sb.auth.getSession().catch(()=>({data:{session:null}}));
 
   if(session?.user){
     await ensureProfile(session.user);
     await loadMe(session.user.id);
+    window.history.replaceState({},document.title,window.location.pathname);
     showApp();
-    // Clean up any OAuth params from URL
-    if(window.location.hash||window.location.search){
-      window.history.replaceState({},document.title,window.location.pathname);
-    }
     return;
   }
 
-  // No session — listen for Google OAuth redirect completing
+  // No session yet — listen for implicit flow to complete (fires when
+  // Supabase detects tokens in URL hash after Google redirect)
   sb.auth.onAuthStateChange(async(event,session)=>{
     if(event==='SIGNED_IN'&&session?.user&&!ME){
       window.history.replaceState({},document.title,window.location.pathname);
