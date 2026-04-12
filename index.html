@@ -850,7 +850,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
             <div class="chat-head">
               <button class="ch-back" onclick="mobileBack()">‹</button>
               <div class="ch-av" id="ch-av"><span id="ch-av-init"></span><img id="ch-av-img" src="" style="display:none"></div>
-              <div class="ch-info"><div class="ch-name" id="ch-name"></div><div class="ch-status" id="ch-status"><span class="dot"></span><span id="ch-status-txt">Offline</span></div></div>
+              <div class="ch-info"><div class="ch-name" id="ch-name"></div><div class="ch-status" id="ch-status"><span class="dot"></span><span id="ch-status-txt">Offline</span></div><div style="font-size:9px;color:rgba(0,255,225,.5);font-family:var(--mono);margin-top:1px">🔒 secured</div></div>
               <div class="ch-actions">
                 <button class="ch-btn" id="btn-search" onclick="toggleMsgSearch()">🔍</button>
                 <button class="ch-btn" id="btn-disappear" onclick="toggleDisappearing()" title="Disappearing messages">⏱</button>
@@ -1922,10 +1922,18 @@ function makeBubble(msg,isFirst,groupMode,membersList){
 function scrollBottom(id,smooth=false){const w=document.getElementById(id);if(w)w.scrollTo({top:w.scrollHeight,behavior:smooth?'smooth':'auto'});}
 
 // -- SEND DM --
+let _lastMsgTime=0;let _lastMsgContent='';
 async function sendMsg(){
   if(!ME?.id){showToast('⚠️ Still loading, try again');return;}
+  const now=Date.now();
+  if(now-_lastMsgTime<1000){return;}
   const inp=document.getElementById('msg-input');
   const text=inp.value.trim();
+  if(text&&text===_lastMsgContent&&now-_lastMsgTime<5000){
+    showToast('⚠️ Slow down!');return;
+  }
+  _lastMsgTime=now;
+  _lastMsgContent=text;
   if((!text&&!pendingImg)||!currentChat)return;
   inp.value='';resizeInput(inp);cancelReply();
   broadcastTyping(false);clearTimeout(typingTimeout);
@@ -2545,10 +2553,18 @@ function appendGroupMsg(msg,senderInfo){
 }
 
 // -- SEND GROUP MESSAGE --
+let _lastGroupMsgTime=0;let _lastGroupMsgContent='';
 async function sendGroupMsg(){
   if(!ME?.id){showToast('⚠️ Still loading, try again');return;}
+  const now=Date.now();
+  if(now-_lastGroupMsgTime<1000){return;}
   const inp=document.getElementById('group-msg-input');
   const text=inp.value.trim();
+  if(text&&text===_lastGroupMsgContent&&now-_lastGroupMsgTime<5000){
+    showToast('⚠️ Slow down!');return;
+  }
+  _lastGroupMsgTime=now;
+  _lastGroupMsgContent=text;
   if((!text&&!pendingGroupImg)||!currentGroup)return;
   inp.value='';resizeInput(inp);
   if(groupChannel)groupChannel.send({type:'broadcast',event:'typing',payload:{uid:ME.id,typing:false,username:ME.username}});
@@ -4091,9 +4107,23 @@ function uc(s){
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 function escAttr(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,50);}
 function timeAgo(ts){
-  const d=(Date.now()-new Date(ts))/1000;
-  if(d<60)return'just now';if(d<3600)return Math.floor(d/60)+'m';
-  if(d<86400)return Math.floor(d/3600)+'h';return Math.floor(d/86400)+'d';
+  if(!ts)return'';
+  const date=new Date(ts);
+  const now=new Date();
+  const d=(now-date)/1000;
+  // Under 1 min: show "just now"
+  if(d<60)return'just now';
+  // Under 1 hour: show "5m ago"
+  if(d<3600)return Math.floor(d/60)+'m ago';
+  // Same day: show actual time like "3:45 PM"
+  if(date.toDateString()===now.toDateString()){
+    return date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }
+  // Yesterday
+  const yesterday=new Date(now);yesterday.setDate(now.getDate()-1);
+  if(date.toDateString()===yesterday.toDateString())return'Yesterday '+date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  // Older: show date + time
+  return date.toLocaleDateString([],{month:'short',day:'numeric'})+' '+date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),3000);}
 
