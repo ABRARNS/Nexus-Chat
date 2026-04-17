@@ -1604,6 +1604,13 @@ function startPresence(){
     }
   });
   window.addEventListener('beforeunload',()=>presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}}));
+
+  // Personal inbox channel — receives vibes even when chat isn't open
+  globalCh=sb.channel(`inbox:${ME.id}`);
+  globalCh.on('broadcast',{event:'vibe'},({payload})=>{
+    triggerVibeBomb(payload?.fromName||'Someone');
+  });
+  globalCh.subscribe();
 }
 
 function updateOnlineUI(){
@@ -1812,7 +1819,14 @@ function sendVibeBomb(){
     },1000);
   }
   const fromName=ME?.username||'Someone';
-  chatChannel.send({type:'broadcast',event:'vibe',payload:{fromName}});
+  // Send to receiver's personal inbox — works even if they don't have this chat open
+  const receiverCh=sb.channel(`inbox:${currentChat}`);
+  receiverCh.subscribe(status=>{
+    if(status==='SUBSCRIBED'){
+      receiverCh.send({type:'broadcast',event:'vibe',payload:{fromName}});
+      setTimeout(()=>sb.removeChannel(receiverCh),2000);
+    }
+  });
   triggerVibeBomb(fromName);
 }
 
