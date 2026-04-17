@@ -927,7 +927,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
                 <div class="input-tools">
                   <div class="emoji-wrap"><button class="it" onclick="toggleEmoji()">☺</button><div class="emoji-picker" id="emoji-picker"></div></div>
                   <button class="it" onclick="document.getElementById('img-input').click()">🖼</button>
-                  <button class="it vibe-bomb-btn" onclick="sendVibeBomb()" title="Vibe Bomb — explodes on their screen!" style="font-size:18px;position:relative">💥</button>
+                  <button id="vibe-bomb-btn" class="it vibe-bomb-btn" onclick="sendVibeBomb()" title="Vibe Bomb — explodes on their screen!" style="font-size:18px;position:relative">💥</button>
                   <input type="file" id="img-input" accept="image/*" style="display:none" onchange="attachImage(this)">
                 </div>
                 <textarea class="msg-txt" id="msg-input" placeholder="Send a message…" rows="1" onkeydown="handleKey(event)" oninput="onType(this)"></textarea>
@@ -1777,8 +1777,8 @@ function subscribeToBroadcast(uid){
     document.querySelector(`[data-id="${payload.id}"]`)?.remove();
     loadedMsgs=loadedMsgs.filter(m=>m.id!==payload.id);
   });
-  chatChannel.on('broadcast',{event:'vibe'},()=>{
-    triggerVibeBomb();
+  chatChannel.on('broadcast',{event:'vibe'},({payload})=>{
+    triggerVibeBomb(payload?.fromName||'Someone');
   });
   chatChannel.subscribe();
 }
@@ -1788,44 +1788,70 @@ function broadcastTyping(isTyping){
 }
 
 // ===== 💥 VIBE BOMB — unique feature, zero storage =====
+let _vibeLastSent=0;
+const VIBE_COOLDOWN=30000;
+
 function sendVibeBomb(){
   if(!chatChannel||!currentChat){showToast('⚠️ Open a chat first');return;}
-  // Animate the button
-  const btn=document.querySelector('.vibe-bomb-btn');
-  if(btn){btn.style.animation='vibeBombLaunch .4s cubic-bezier(.34,1.56,.64,1)';setTimeout(()=>btn.style.animation='',400);}
-  // Broadcast to the other person (no DB write!)
-  chatChannel.send({type:'broadcast',event:'vibe',payload:{from:ME.id}});
-  // Also explode on sender's screen
-  triggerVibeBomb();
-  showToast('💥 Vibe sent!');
+  const now=Date.now();
+  const remaining=Math.ceil((VIBE_COOLDOWN-(now-_vibeLastSent))/1000);
+  if(now-_vibeLastSent<VIBE_COOLDOWN){
+    showToast(`💥 Wait ${remaining}s before next Vibe!`);return;
+  }
+  _vibeLastSent=now;
+  // Cooldown UI on button
+  const btn=document.getElementById('vibe-bomb-btn');
+  if(btn){
+    btn.style.opacity='.4';
+    btn.style.animation='vibeBombLaunch .4s cubic-bezier(.34,1.56,.64,1)';
+    setTimeout(()=>btn.style.animation='',400);
+    const interval=setInterval(()=>{
+      const r=Math.ceil((VIBE_COOLDOWN-(Date.now()-_vibeLastSent))/1000);
+      if(btn)btn.title=r>0?`💥 Wait ${r}s`:'💥 Vibe Bomb!';
+      if(r<=0){clearInterval(interval);if(btn){btn.style.opacity='1';btn.title='💥 Vibe Bomb!';}}
+    },1000);
+  }
+  const fromName=ME?.username||'Someone';
+  chatChannel.send({type:'broadcast',event:'vibe',payload:{fromName}});
+  triggerVibeBomb(fromName);
 }
 
-function triggerVibeBomb(){
+function triggerVibeBomb(fromName){
   const EMOJIS=['💥','🔥','✨','💫','⭐','🌟','💜','💚','❤️','😍','🚀','🎉','🌊','⚡','🎊','💎','🦋','🌈'];
-  const count=40;
-  // Shake the whole app
+  // Show who sent it
+  const banner=document.createElement('div');
+  banner.textContent=`💥 ${fromName} sent a Vibe Bomb!`;
+  banner.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,#b54dff,#00ffe1);color:#000;font-weight:900;font-size:18px;padding:14px 28px;border-radius:100px;z-index:10000;pointer-events:none;font-family:monospace;white-space:nowrap;transition:transform .3s cubic-bezier(.34,1.56,.64,1)';
+  document.body.appendChild(banner);
+  requestAnimationFrame(()=>{banner.style.transform='translate(-50%,-50%) scale(1)';});
+  setTimeout(()=>{banner.style.transform='translate(-50%,-50%) scale(0)';setTimeout(()=>banner.remove(),300);},2000);
+  // Shake screen
   const app=document.getElementById('app');
-  if(app){app.style.animation='vibeShake .6s ease';setTimeout(()=>app.style.animation='',600);}
-  // Flash background
+  if(app){
+    app.style.transition='transform .05s';
+    let s=0;
+    const shake=setInterval(()=>{
+      app.style.transform=`translate(${(Math.random()-.5)*10}px,${(Math.random()-.5)*8}px)`;
+      if(++s>12){clearInterval(shake);app.style.transform='';app.style.transition='';}
+    },50);
+  }
+  // Flash
   const flash=document.createElement('div');
-  flash.style.cssText='position:fixed;inset:0;z-index:9998;pointer-events:none;animation:vibeFlash .6s ease';
+  flash.style.cssText='position:fixed;inset:0;z-index:9998;pointer-events:none;background:rgba(181,77,255,.2);transition:opacity .4s';
   document.body.appendChild(flash);
-  setTimeout(()=>flash.remove(),600);
-  // Launch emojis from all directions
-  for(let i=0;i<count;i++){
+  setTimeout(()=>{flash.style.opacity='0';setTimeout(()=>flash.remove(),400);},100);
+  // Launch emojis
+  for(let i=0;i<45;i++){
     setTimeout(()=>{
       const el=document.createElement('div');
-      const emoji=EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
-      const startX=Math.random()*100;
-      const startY=Math.random()*100;
-      const vx=(Math.random()-0.5)*600;
-      const vy=(Math.random()-1.2)*600;
-      const vr=(Math.random()-0.5)*720;
-      el.textContent=emoji;
-      el.style.cssText=`position:fixed;left:${startX}%;top:${startY}%;font-size:${24+Math.random()*24}px;pointer-events:none;z-index:9999;--vx:${vx}px;--vy:${vy}px;--vr:${vr}deg;animation:vibeFly ${0.6+Math.random()*0.6}s cubic-bezier(.2,.8,.4,1) forwards`;
+      el.textContent=EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+      const sx=10+Math.random()*80,sy=10+Math.random()*80;
+      const vx=(Math.random()-.5)*500,vy=(Math.random()-1)*500,vr=(Math.random()-.5)*720;
+      el.style.cssText=`position:fixed;left:${sx}%;top:${sy}%;font-size:${22+Math.random()*22}px;pointer-events:none;z-index:9999;transition:transform ${.5+Math.random()*.5}s cubic-bezier(.2,.8,.4,1),opacity ${.4+Math.random()*.4}s ease ${.3+Math.random()*.3}s`;
       document.body.appendChild(el);
-      setTimeout(()=>el.remove(),1400);
-    },i*18);
+      requestAnimationFrame(()=>{el.style.transform=`translate(${vx}px,${vy}px) rotate(${vr}deg) scale(2)`;el.style.opacity='0';});
+      setTimeout(()=>el.remove(),1200);
+    },i*20);
   }
 }
 
