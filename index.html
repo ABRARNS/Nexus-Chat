@@ -1591,6 +1591,9 @@ function attachGroupImage(inp){
 
 // -- PRESENCE --
 function startPresence(){
+  // Guard against duplicate subscriptions if showApp called twice
+  if(presenceCh)return;
+
   presenceCh=sb.channel('nexus-online');
   presenceCh.on('broadcast',{event:'heartbeat'},({payload})=>{
     if(!payload?.uid||payload.uid===ME.id)return;
@@ -1609,6 +1612,7 @@ function startPresence(){
   presenceCh.subscribe(status=>{
     if(status==='SUBSCRIBED'){
       presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
+      if(heartbeatInterval)clearInterval(heartbeatInterval);
       heartbeatInterval=setInterval(()=>{
         presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
         const cutoff=Date.now()-45000;
@@ -1617,11 +1621,12 @@ function startPresence(){
       },20000);
     }
   });
-  window.addEventListener('beforeunload',()=>presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}}));
+  window.addEventListener('beforeunload',()=>{
+    try{presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}});}catch(e){}
+  });
 
-  // Personal inbox channel — receives vibes even when chat isn't open
-  // Personal inbox — separate variable so startGlobalSub doesn't overwrite it
-  if(inboxCh)sb.removeChannel(inboxCh);
+  // Personal inbox for vibe bomb — guard against duplicates too
+  if(inboxCh)return;
   inboxCh=sb.channel(`inbox:${ME.id}`);
   inboxCh.on('broadcast',{event:'vibe'},({payload})=>{
     triggerVibeBomb(payload?.fromName||'Someone');
@@ -1648,6 +1653,7 @@ function updateOnlineUI(){
 
 // -- GLOBAL SUBSCRIPTION --
 function startGlobalSub(){
+  if(globalCh)return; // prevent duplicate
   globalCh=sb.channel('global-inbox')
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`receiver_id=eq.${ME.id}`},async payload=>{
       const msg=payload.new;
