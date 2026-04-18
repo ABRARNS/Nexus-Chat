@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
 <title>NEXUS-CHAT — Real Social Network</title>
 
@@ -38,6 +41,16 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey:"AIzaSyBBEpPg36DpbKdXJzckFvScOT1T8zeXEYk",
+    authDomain:"nexus-chat-dca4c.firebaseapp.com",
+    projectId:"nexus-chat-dca4c",
+    storageBucket:"nexus-chat-dca4c.firebasestorage.app",
+    messagingSenderId:"508912791206",
+    appId:"1:508912791206:web:df741cb27b0b6b96c2ce67"
+  });
+</script>
 
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -1296,7 +1309,7 @@ setTimeout(initAuthBg,100);
 // -- STATE --
 let ME=null, currentChat=null, currentProfile=null;
 let currentGroup=null, currentGroupData=null, currentGroupRole='member';
-let chatChannel=null, groupChannel=null, presenceCh=null, globalCh=null;
+let chatChannel=null, groupChannel=null, presenceCh=null, globalCh=null, inboxCh=null;
 let onlineUsers=new Set(), onlineTimestamps={}, heartbeatInterval=null;
 let allUsers=[], allGroups=[], groupMembers=[], groupMembersCache={};
 let loadedMsgs=[], loadedGroupMsgs=[], myLikedPosts=new Set();
@@ -1476,6 +1489,7 @@ async function signOut(){
   if(heartbeatInterval){clearInterval(heartbeatInterval);heartbeatInterval=null;}
   if(presenceCh){presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}});sb.removeChannel(presenceCh);}
   if(globalCh)sb.removeChannel(globalCh);
+  if(inboxCh)sb.removeChannel(inboxCh);
   if(chatChannel)sb.removeChannel(chatChannel);
   if(groupChannel)sb.removeChannel(groupChannel);
   await sb.auth.signOut();
@@ -1606,11 +1620,13 @@ function startPresence(){
   window.addEventListener('beforeunload',()=>presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}}));
 
   // Personal inbox channel — receives vibes even when chat isn't open
-  globalCh=sb.channel(`inbox:${ME.id}`);
-  globalCh.on('broadcast',{event:'vibe'},({payload})=>{
+  // Personal inbox — separate variable so startGlobalSub doesn't overwrite it
+  if(inboxCh)sb.removeChannel(inboxCh);
+  inboxCh=sb.channel(`inbox:${ME.id}`);
+  inboxCh.on('broadcast',{event:'vibe'},({payload})=>{
     triggerVibeBomb(payload?.fromName||'Someone');
   });
-  globalCh.subscribe();
+  inboxCh.subscribe();
 }
 
 function updateOnlineUI(){
