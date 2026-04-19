@@ -3079,7 +3079,7 @@ function renderFeed(posts){
   if(!posts.length){el.innerHTML='<div style="color:var(--t4);font-family:var(--mono);font-size:13px;padding:10px 0">No posts yet!</div>';return;}
   el.innerHTML=posts.map(post=>{
     const pf=post.profiles||{},uname=pf.username||'?',liked=myLikedPosts.has(post.id);
-    return`<div class="post-card">
+    return`<div class="post-card" data-post-id="${post.id}">
       <div class="post-head">
         <div class="post-av" style="background:${uc(uname)}">${pf.avatar_url?`<img src="${pf.avatar_url}">`:`<span>${uname[0].toUpperCase()}</span>`}</div>
         <div style="flex:1;min-width:0"><div class="post-name">@${uname}</div><div class="post-time">${timeAgo(post.created_at)}</div></div>
@@ -3089,12 +3089,31 @@ function renderFeed(posts){
       <div class="post-actions">
         <button class="pa ${liked?'liked':''}" onclick="likePost('${post.id}',this)">${liked?'❤️':'♡'} ${post.likes||0}</button>
         <button class="pa" onclick="openComments('${post.id}')">💬 ${post.comment_count||0}</button>
+        <span style="font-size:11px;color:var(--t4);font-family:var(--mono);display:flex;align-items:center;gap:3px;padding:0 6px">👁 <span id="pv-${post.id}">${post.view_count||0}</span></span>
         <button class="pa" onclick="sharePost('${post.id}','${esc(post.content?.slice(0,60)||'')}')">↪ Share</button>
         ${post.user_id===ME.id?`<button class="pa" style="color:var(--pink)" onclick="deletePost('${post.id}')">🗑 Delete</button>`:''}
       </div>
     </div>`;
   }).join('');
-  requestAnimationFrame(staggerCards);
+  requestAnimationFrame(()=>{
+    staggerCards();
+    // Track views for each visible post
+    posts.forEach(post=>{
+      if(post.user_id!==ME.id) trackPostView(post.id);
+    });
+  });
+}
+
+// Track post view — unique per user, won't increment on repeat visits
+async function trackPostView(postId){
+  // upsert so same user viewing again doesn't add duplicate
+  const{error}=await sb.from('post_views').upsert({post_id:postId,user_id:ME.id},{onConflict:'post_id,user_id',ignoreDuplicates:true});
+  if(!error){
+    // Update count display
+    const{data}=await sb.from('post_views').select('id',{count:'exact'}).eq('post_id',postId);
+    const el=document.getElementById('pv-'+postId);
+    if(el&&data)el.textContent=data.length;
+  }
 }
 
 async function createPost(){
@@ -3479,10 +3498,15 @@ function showCurrentStory(){
   loadStoryReactions(story.id);
   // Pre-load comment count silently
   loadStoryComments(story.id);
-  // Record view
+  // Record view + show count
   if(story.user_id!==ME.id){
     sb.from('story_views').upsert({story_id:story.id,user_id:ME.id}).catch(()=>{});
   }
+  // Load and display view count
+  sb.from('story_views').select('id',{count:'exact'}).eq('story_id',story.id).then(({count})=>{
+    const vEl=document.getElementById('sv-views');
+    if(vEl)vEl.innerHTML=`👁 ${count||0} view${count===1?'':'s'}`;
+  });
   // Show delete button only for own stories
   if(delWrap)delWrap.style.display=String(story.user_id)===String(ME.id)?'block':'none';
   const rxnBar=document.getElementById('story-rxn-bar');
@@ -3776,24 +3800,32 @@ const FCM_VAPID='6LNSJ_o6QQXpLFUKgizkpxhafk4i58pb0kPuQEunjJA';
 let _fcmToken=null;
 
 async function initFCM(){
-  if(!('Notification'in window))return;
-  if(Notification.permission!=='granted')return;
-  if(!window.firebase?.messaging){console.log('Firebase Messaging SDK not loaded');return;}
+  if(!('Notification'in window)){console.log('FCM: Notifications not supported');return;}
+  if(Notification.permission!=='granted'){console.log('FCM: Permission not granted:',Notification.permission);return;}
+  if(!window.firebase){console.log('FCM: Firebase not loaded');return;}
+  if(!window.firebase.messaging){console.log('FCM: Messaging not available');return;}
   try{
     const messaging=window.firebase.messaging();
+    console.log('FCM: Registering SW...');
     const sw=await navigator.serviceWorker.register('/Nexus-Chat/firebase-messaging-sw.js',{scope:'/Nexus-Chat/'});
+    await sw.update();
+    console.log('FCM: SW registered, getting token...');
     _fcmToken=await messaging.getToken({vapidKey:FCM_VAPID,serviceWorkerRegistration:sw});
+    console.log('FCM: Token obtained:',_fcmToken?'YES ('+_fcmToken.slice(0,20)+'...)':'FAILED - token is null');
     if(_fcmToken&&ME?.id){
-      // Save token to Supabase for this user
-      await sb.from('push_tokens').upsert({user_id:ME.id,token:_fcmToken,platform:'web'},{onConflict:'user_id,token'});
-      console.log('FCM token saved');
+      const{error}=await sb.from('push_tokens').upsert({user_id:ME.id,token:_fcmToken,platform:'web'},{onConflict:'user_id,token'});
+      if(error){console.log('FCM: Supabase save error:',error.message,error.code);}
+      else{console.log('FCM: Token saved to Supabase ✅');}
+    }else{
+      console.log('FCM: Token not saved — token:',!!_fcmToken,'ME.id:',ME?.id);
     }
-    // Handle foreground messages
     messaging.onMessage((payload)=>{
       const{title,body}=payload.notification||{};
       if(title)showToast('🔔 '+title+(body?' — '+body:''));
     });
-  }catch(e){console.log('FCM init error:',e);}
+  }catch(e){
+    console.log('FCM: Init error:',e.code||e.message,e);
+  }
 }
 
 async function enableNotifications(){
