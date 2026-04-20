@@ -1424,7 +1424,11 @@ async function doLogin(){
   btn.disabled=true;btn.textContent='SIGNING IN…';
   const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
   if(error){showErr(error.message);btn.disabled=false;btn.textContent='SIGN IN →';return;}
-  await loadMe(data.user.id);showApp();
+  // Set ME immediately with basic info so showApp() doesn't wait for DB
+  ME={id:data.user.id,username:data.user.email?.split('@')[0]||'user',bio:'',avatar_url:''};
+  showApp();
+  // Then load full profile in background
+  loadMe(data.user.id);
 }
 
 async function doSignup(){
@@ -1565,6 +1569,10 @@ function startPresence(){
     updateOnlineCount();
     updateOnlineUI();
   });
+  presenceCh.on('broadcast',{event:'ping'},()=>{
+    // Someone joined — reply with your heartbeat immediately
+    presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
+  });
   presenceCh.on('broadcast',{event:'bye'},({payload})=>{
     if(!payload?.uid)return;
     onlineUsers.delete(payload.uid);
@@ -1574,31 +1582,28 @@ function startPresence(){
   });
   presenceCh.subscribe(status=>{
     if(status==='SUBSCRIBED'){
+      // Send own heartbeat
       presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
+      // Ping everyone to send their heartbeats back immediately
+      presenceCh.send({type:'broadcast',event:'ping',payload:{uid:ME.id}});
       if(heartbeatInterval)clearInterval(heartbeatInterval);
       heartbeatInterval=setInterval(()=>{
         presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
-        const cutoff=Date.now()-45000;
+        const cutoff=Date.now()-35000;
         Object.keys(onlineTimestamps).forEach(uid=>{if(onlineTimestamps[uid]<cutoff){onlineUsers.delete(uid);delete onlineTimestamps[uid];}});
         updateOnlineUI();
-      },20000);
+      },12000); // heartbeat every 12s (was 20s) — faster online detection
     }
     if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
-      console.log('Presence dropped, reconnecting...');
-      clearInterval(heartbeatInterval);
-      heartbeatInterval=null;
-      setTimeout(()=>{
-        if(presenceCh)sb.removeChannel(presenceCh);
-        presenceCh=null;
-        startPresence();
-      },3000);
+      clearInterval(heartbeatInterval);heartbeatInterval=null;
+      setTimeout(()=>{if(presenceCh)sb.removeChannel(presenceCh);presenceCh=null;startPresence();},2000);
     }
   });
   window.addEventListener('beforeunload',()=>{
     try{presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}});}catch(e){}
   });
 
-  // Personal inbox for vibe bomb
+  // Personal inbox — receives vibes from anyone
   inboxCh=sb.channel(`inbox:${ME.id}`);
   inboxCh.on('broadcast',{event:'vibe'},({payload})=>{
     triggerVibeBomb(payload?.fromName||'Someone');
@@ -1757,11 +1762,13 @@ async function openChat(uid){
   document.getElementById('right-panel').style.display='flex';
   renderRightPanel(p);
   loadDisappearMode(uid);
-  deleteExpiredMessages(uid); // non-blocking
+  deleteExpiredMessages(uid);
   await loadMsgs();
   loadPinnedMsg();
   highlightConvo(uid);
   subscribeToBroadcast(uid);
+  // Ping presence so the other user's status updates immediately
+  if(presenceCh)presenceCh.send({type:'broadcast',event:'ping',payload:{uid:ME.id}});
   sb.from('messages').update({read_at:new Date().toISOString()}).eq('sender_id',uid).eq('receiver_id',ME.id).is('read_at',null).then(()=>{});
 }
 
@@ -1793,6 +1800,12 @@ function subscribeToBroadcast(uid){
     loadedMsgs=loadedMsgs.filter(m=>m.id!==payload.id);
   });
   chatChannel.on('broadcast',{event:'vibe'},({payload})=>{
+    if(payload?.to===ME.id||payload?.fromName!==ME.username)
+      triggerVibeBomb(payload?.fromName||'Someone');
+  });
+  // Also subscribe to shared vibe channel for this conversation
+  const vibeKey=[ME.id,uid].sort().join('-');
+  chatChannel.on('broadcast',{event:'vibe_shared'},({payload})=>{
     triggerVibeBomb(payload?.fromName||'Someone');
   });
   chatChannel.subscribe(status=>{
@@ -1812,7 +1825,7 @@ let _vibeLastSent=0;
 const VIBE_COOLDOWN=30000;
 
 function sendVibeBomb(){
-  if(!chatChannel||!currentChat){showToast('⚠️ Open a chat first');return;}
+  if(!currentChat){showToast('⚠️ Open a chat first');return;}
   const now=Date.now();
   const remaining=Math.ceil((VIBE_COOLDOWN-(now-_vibeLastSent))/1000);
   if(now-_vibeLastSent<VIBE_COOLDOWN){
@@ -1832,15 +1845,18 @@ function sendVibeBomb(){
     },1000);
   }
   const fromName=ME?.username||'Someone';
-  // Send to receiver's personal inbox — works even if they don't have this chat open
-  const receiverCh=sb.channel(`inbox:${currentChat}`);
-  receiverCh.subscribe(status=>{
-    if(status==='SUBSCRIBED'){
-      receiverCh.send({type:'broadcast',event:'vibe',payload:{fromName}});
-      setTimeout(()=>sb.removeChannel(receiverCh),2000);
+  // Send to receiver's inbox — create temp channel, send, destroy
+  const vibeCh=sb.channel(`inbox:${currentChat}`);
+  let vibeSent=false;
+  vibeCh.subscribe(status=>{
+    if(status==='SUBSCRIBED'&&!vibeSent){
+      vibeSent=true;
+      vibeCh.send({type:'broadcast',event:'vibe',payload:{fromName}});
+      setTimeout(()=>{try{sb.removeChannel(vibeCh);}catch(e){}},3000);
     }
   });
   triggerVibeBomb(fromName);
+  showToast('💥 Vibe sent!');
 }
 
 function triggerVibeBomb(fromName){
