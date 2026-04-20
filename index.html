@@ -2067,7 +2067,8 @@ async function sendMsg(){
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
   if(chatChannel)chatChannel.send({type:'broadcast',event:'msg',payload:{...newMsg}});
-  // Push handled by DB webhook
+  // Send push notification to receiver
+  sendPushToUser(currentChat, `@${ME.username||'Someone'}`, text||'📷 Sent an image');
   loadConvos();
 }
 
@@ -2719,6 +2720,12 @@ async function sendGroupMsg(){
       }
     });
   }
+  // Push to all group members except sender
+  Object.values(groupMembersCache).forEach(m=>{
+    if(m.id!==ME.id){
+      sendPushToUser(m.id,`${currentGroupData?.name||'Group'} — @${ME.username||'Someone'}`,text||'📷 Sent an image');
+    }
+  });
 }
 
 // -- DELETE GROUP MESSAGE --
