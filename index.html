@@ -3787,9 +3787,20 @@ async function initFCM(){
   try{
     const messaging=window.firebase.messaging();
     console.log('FCM: Registering SW...');
-    const sw=await navigator.serviceWorker.register('/Nexus-Chat/firebase-messaging-sw.js',{scope:'/Nexus-Chat/'});
+    // Register SW — try PWA scope first, fall back to root
+    let sw;
+    try{
+      sw=await navigator.serviceWorker.register('/Nexus-Chat/firebase-messaging-sw.js',{scope:'/Nexus-Chat/'});
+    }catch(e){
+      sw=await navigator.serviceWorker.register('/Nexus-Chat/firebase-messaging-sw.js');
+    }
+    await navigator.serviceWorker.ready;
+    await sw.update();
+    await navigator.serviceWorker.ready;
     await sw.update();
     console.log('FCM: SW registered, getting token...');
+    // Delete old token first to force fresh one (fixes mobile stale token issue)
+    try{await messaging.deleteToken();}catch(e){}
     _fcmToken=await messaging.getToken({vapidKey:FCM_VAPID,serviceWorkerRegistration:sw});
     console.log('FCM: Token obtained:',_fcmToken?'YES ('+_fcmToken.slice(0,20)+'...)':'FAILED - token is null');
     if(_fcmToken&&ME?.id){
