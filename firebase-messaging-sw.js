@@ -1,9 +1,10 @@
-// Firebase Messaging Service Worker
-// File location in repo: /firebase-messaging-sw.js (root)
-// GitHub Pages will serve it at /Nexus-Chat/firebase-messaging-sw.js
-
+// Firebase Messaging Service Worker — NEXUS-CHAT
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+
+// Force new SW to activate immediately — never gets stuck on "waiting"
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
 
 firebase.initializeApp({
   apiKey:"AIzaSyBBEpPg36DpbKdXJzckFvScOT1T8zeXEYk",
@@ -16,7 +17,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background notifications
 messaging.onBackgroundMessage((payload) => {
   const { title, body, icon } = payload.notification || {};
   self.registration.showNotification(title || 'NEXUS', {
@@ -24,13 +24,20 @@ messaging.onBackgroundMessage((payload) => {
     icon: icon || '/Nexus-Chat/icon-192.png',
     badge: '/Nexus-Chat/icon-192.png',
     data: payload.data || {},
+    vibrate: [200, 100, 200],
   });
 });
 
-// Click opens the app
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow('https://abrarns.github.io/Nexus-Chat/index.html')
+    clients.matchAll({type:'window',includeUncontrolled:true}).then(list => {
+      // Focus existing tab if open
+      for (const client of list) {
+        if (client.url.includes('Nexus-Chat') && 'focus' in client) return client.focus();
+      }
+      // Otherwise open new tab
+      return clients.openWindow('https://abrarns.github.io/Nexus-Chat/index.html');
+    })
   );
 });
