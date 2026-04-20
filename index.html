@@ -1145,6 +1145,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <button class="mbtn sec" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Switch to Light Mode</button>
     <button class="mbtn sec" onclick="openProfileVisitorsModal()">👁 Who Viewed My Profile</button>
     <button class="mbtn sec" id="notif-enable-btn" onclick="enableNotifications()">🔔 Enable Notifications</button>
+    <button class="mbtn sec" id="pwa-install-btn" onclick="triggerPWAInstall()" style="display:none">📲 Install App</button>
     <button class="mbtn prim" onclick="inviteFriends()" style="background:linear-gradient(135deg,rgba(0,255,225,.15),rgba(181,77,255,.15));border-color:rgba(0,255,225,.3)">🔗 Invite Friends to NEXUS</button>
     <button class="mbtn danger" onclick="signOut()">🚪 Sign Out</button>
     <button class="mbtn danger" style="opacity:.5;font-size:11px;padding:8px" onclick="deleteAccount()">Delete Account</button>
@@ -1582,6 +1583,16 @@ function startPresence(){
         updateOnlineUI();
       },20000);
     }
+    if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+      console.log('Presence dropped, reconnecting...');
+      clearInterval(heartbeatInterval);
+      heartbeatInterval=null;
+      setTimeout(()=>{
+        if(presenceCh)sb.removeChannel(presenceCh);
+        presenceCh=null;
+        startPresence();
+      },3000);
+    }
   });
   window.addEventListener('beforeunload',()=>{
     try{presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}});}catch(e){}
@@ -1623,11 +1634,24 @@ function startGlobalSub(){
         markReadDB(msg.id);
       }else{
         const{data:s}=await sb.from('profiles').select('*').eq('id',msg.sender_id).single();
-        const name=s?.username||'Someone';
         addNotif(s||{username:'Someone'},msg.content?.slice(0,50)||'📷 image');
         showFloatNotif(s||{username:'Someone',avatar_url:''},msg.content||'📷 Sent an image',msg.sender_id);
       }
-    }).subscribe();
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`sender_id=eq.${ME.id}`},payload=>{
+      // Message I sent confirmed by DB — update convo list
+      loadConvos();
+    })
+    .subscribe(status=>{
+      if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+        console.log('globalCh dropped, reconnecting...');
+        setTimeout(()=>{
+          if(globalCh)sb.removeChannel(globalCh);
+          globalCh=null;
+          startGlobalSub();
+        },3000);
+      }
+    });
 }
 
 // -- BLOCK --
@@ -1753,6 +1777,8 @@ function subscribeToBroadcast(uid){
   chatChannel=sb.channel(`chat:${key}`);
   chatChannel.on('broadcast',{event:'msg'},({payload})=>{
     if(payload.sender_id===ME.id)return;
+    // Check if already in loadedMsgs to avoid duplicates
+    if(loadedMsgs.find(m=>m.id===payload.id))return;
     appendMsg(payload);markReadDB(payload.id);
   });
   chatChannel.on('broadcast',{event:'typing'},({payload})=>{
@@ -1769,7 +1795,12 @@ function subscribeToBroadcast(uid){
   chatChannel.on('broadcast',{event:'vibe'},({payload})=>{
     triggerVibeBomb(payload?.fromName||'Someone');
   });
-  chatChannel.subscribe();
+  chatChannel.subscribe(status=>{
+    if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+      console.log('chatChannel error, reconnecting...');
+      setTimeout(()=>subscribeToBroadcast(currentChat),2000);
+    }
+  });
 }
 
 function broadcastTyping(isTyping){
@@ -4296,6 +4327,17 @@ function timeAgo(ts){
 }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),3000);}
 
+// Auto-refresh when tab becomes visible again after being hidden
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&ME?.id){
+    loadConvos();
+    if(currentChat)loadMsgs(currentChat);
+    if(currentGroup)loadGroupMsgs(currentGroup);
+    // Re-send heartbeat immediately
+    if(presenceCh)presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
+  }
+});
+
 // close dropdowns on click outside
 document.addEventListener('click',e=>{
   if(!e.target.closest('.emoji-picker')&&!e.target.closest('.it')){document.getElementById('emoji-picker').classList.remove('on');document.getElementById('group-emoji-picker').classList.remove('on');}
@@ -4342,6 +4384,48 @@ document.head.appendChild(style);
 setTimeout(()=>{if(!document.getElementById('loading').classList.contains('hide'))showAuth();},5000);
 
 // -- PWA INSTALL PROMPT --
+let _pwaPrompt=null;
+
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  _pwaPrompt=e;
+  const btn=document.getElementById('pwa-install-btn');
+  if(btn)btn.style.display='block';
+});
+
+window.addEventListener('appinstalled',()=>{
+  const btn=document.getElementById('pwa-install-btn');
+  if(btn)btn.style.display='none';
+  showToast('✅ NEXUS installed!');
+});
+
+function triggerPWAInstall(){
+  if(_pwaPrompt){
+    _pwaPrompt.prompt();
+    _pwaPrompt.userChoice.then(result=>{
+      if(result.outcome==='accepted'){
+        dismissPWABanner();
+        showToast('🎉 Installing NEXUS...');
+      }
+      _pwaPrompt=null;
+    });
+  }else{
+    // Fallback for iOS or when prompt not available
+    showToast('📲 Tap Share → Add to Home Screen in your browser');
+  }
+}
+
+function dismissPWABanner(){
+  const bar=document.getElementById('pwa-install-bar');
+  if(bar)bar.style.transform='translateY(100%)';
+  localStorage.setItem('pwa_banner_dismissed','1');
+}
+
+// Also add install option in profile/settings menu
+function checkPWAInstalled(){
+  return window.matchMedia('(display-mode: standalone)').matches||
+         window.navigator.standalone===true;
+}
 let deferredInstallPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
