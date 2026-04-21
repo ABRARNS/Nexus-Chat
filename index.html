@@ -1457,6 +1457,8 @@ function showErr(m){const e=document.getElementById('auth-err');e.textContent=m;
 
 async function signOut(){
   if(heartbeatInterval){clearInterval(heartbeatInterval);heartbeatInterval=null;}
+  if(window._onlineCheckInterval){clearInterval(window._onlineCheckInterval);window._onlineCheckInterval=null;}
+  stopMsgPoll();
   if(presenceCh){presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}});sb.removeChannel(presenceCh);}
   if(globalCh)sb.removeChannel(globalCh);
   if(inboxCh)sb.removeChannel(inboxCh);
@@ -1561,49 +1563,42 @@ function attachGroupImage(inp){
 
 // -- PRESENCE --
 function startPresence(){
+  // Update own last_seen in DB every 15 seconds — reliable, no broadcast needed
+  const updateSeen=()=>sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('id',ME.id);
+  updateSeen(); // immediate
+  heartbeatInterval=setInterval(updateSeen, 15000);
+
+  // Check who's online every 10 seconds by querying DB
+  const checkOnline=async()=>{
+    const since=new Date(Date.now()-35000).toISOString(); // online = seen in last 35s
+    const{data}=await sb.from('profiles').select('id').gte('last_seen',since);
+    onlineUsers=new Set((data||[]).map(p=>p.id).filter(id=>id!==ME.id));
+    updateOnlineUI();
+  };
+  checkOnline(); // immediate check
+  if(!window._onlineCheckInterval){
+    window._onlineCheckInterval=setInterval(checkOnline,10000);
+  }
+
+  // Keep broadcast as bonus for instant updates (but not required)
   presenceCh=sb.channel('nexus-online');
   presenceCh.on('broadcast',{event:'heartbeat'},({payload})=>{
     if(!payload?.uid||payload.uid===ME.id)return;
     onlineTimestamps[payload.uid]=Date.now();
     onlineUsers.add(payload.uid);
-    updateOnlineCount();
-    updateOnlineUI();
-  });
-  presenceCh.on('broadcast',{event:'ping'},()=>{
-    // Someone joined — reply with your heartbeat immediately
-    presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
-  });
-  presenceCh.on('broadcast',{event:'bye'},({payload})=>{
-    if(!payload?.uid)return;
-    onlineUsers.delete(payload.uid);
-    updateOnlineCount();
-    delete onlineTimestamps[payload.uid];
     updateOnlineUI();
   });
   presenceCh.subscribe(status=>{
     if(status==='SUBSCRIBED'){
-      // Send own heartbeat
       presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
-      // Ping everyone to send their heartbeats back immediately
-      presenceCh.send({type:'broadcast',event:'ping',payload:{uid:ME.id}});
-      if(heartbeatInterval)clearInterval(heartbeatInterval);
-      heartbeatInterval=setInterval(()=>{
-        presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
-        const cutoff=Date.now()-35000;
-        Object.keys(onlineTimestamps).forEach(uid=>{if(onlineTimestamps[uid]<cutoff){onlineUsers.delete(uid);delete onlineTimestamps[uid];}});
-        updateOnlineUI();
-      },12000); // heartbeat every 12s (was 20s) — faster online detection
     }
-    if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
-      clearInterval(heartbeatInterval);heartbeatInterval=null;
-      setTimeout(()=>{if(presenceCh)sb.removeChannel(presenceCh);presenceCh=null;startPresence();},2000);
-    }
-  });
-  window.addEventListener('beforeunload',()=>{
-    try{presenceCh.send({type:'broadcast',event:'bye',payload:{uid:ME.id}});}catch(e){}
   });
 
-  // Personal inbox — receives vibes from anyone
+  window.addEventListener('beforeunload',()=>{
+    try{sb.from('profiles').update({last_seen:new Date(Date.now()-60000).toISOString()}).eq('id',ME.id);}catch(e){}
+  });
+
+  // Personal inbox for vibe bomb
   inboxCh=sb.channel(`inbox:${ME.id}`);
   inboxCh.on('broadcast',{event:'vibe'},({payload})=>{
     triggerVibeBomb(payload?.fromName||'Someone');
@@ -1612,6 +1607,7 @@ function startPresence(){
 }
 
 function updateOnlineUI(){
+  updateOnlineCount();
   document.querySelectorAll('.ci-online').forEach(d=>{const ci=d.closest('.ci');if(!ci)return;d.classList.toggle('on',onlineUsers.has(ci.id.replace('ci-','')));});
   if(currentChat){
     const on=onlineUsers.has(currentChat);
@@ -1764,6 +1760,7 @@ async function openChat(uid){
   loadDisappearMode(uid);
   deleteExpiredMessages(uid);
   await loadMsgs();
+  startMsgPoll(); // reliable 4s fallback for missed broadcasts
   loadPinnedMsg();
   highlightConvo(uid);
   subscribeToBroadcast(uid);
@@ -1977,11 +1974,37 @@ async function loadMsgs(){
     .or(`and(sender_id.eq.${ME.id},receiver_id.eq.${currentChat}),and(sender_id.eq.${currentChat},receiver_id.eq.${ME.id})`)
     .order('created_at',{ascending:true});
   loadedMsgs=data||[];
-  // Remove already-expired disappearing messages before rendering
   loadedMsgs=loadedMsgs.filter(m=>!m.disappears_at||new Date(m.disappears_at)>new Date());
   renderMsgs(loadedMsgs);
   scheduleMessageDeletion(loadedMsgs);
   setTimeout(()=>loadReactions(),100);
+}
+
+// Poll for new messages every 4 seconds — reliable fallback when broadcast drops
+let _msgPollInterval=null;
+function startMsgPoll(){
+  stopMsgPoll();
+  _msgPollInterval=setInterval(async()=>{
+    if(!currentChat||!ME?.id)return;
+    const lastId=loadedMsgs.length?loadedMsgs[loadedMsgs.length-1].created_at:new Date(0).toISOString();
+    const{data}=await sb.from('messages')
+      .select('*')
+      .or(`and(sender_id.eq.${ME.id},receiver_id.eq.${currentChat}),and(sender_id.eq.${currentChat},receiver_id.eq.${ME.id})`)
+      .gt('created_at',lastId)
+      .order('created_at',{ascending:true});
+    if(data?.length){
+      data.forEach(msg=>{
+        if(!loadedMsgs.find(m=>m.id===msg.id)){
+          appendMsg(msg);
+          if(msg.sender_id===currentChat)markReadDB(msg.id);
+        }
+      });
+      loadConvos();
+    }
+  },4000);
+}
+function stopMsgPoll(){
+  if(_msgPollInterval){clearInterval(_msgPollInterval);_msgPollInterval=null;}
 }
 
 function renderMsgs(msgs){
@@ -2456,6 +2479,7 @@ function filterGroups(v){renderGroupList(allGroups,v);}
 
 async function openGroupChat(groupId){
   currentGroup=groupId;currentChat=null;
+  stopMsgPoll(); // stop DM poll when switching to group
   mobileShowChat('groups');
   const group=allGroups.find(g=>g.id===groupId);
   if(!group)return;
