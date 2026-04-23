@@ -1168,9 +1168,13 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="fl">Status</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px" id="status-grid">
       <button class="status-opt" data-status="auto" onclick="setStatus('auto')">🔄 Auto</button>
-      <button class="status-opt" data-status="online" onclick="setStatus('online')">🟢 Online</button>
       <button class="status-opt" data-status="away" onclick="setStatus('away')">🟡 Away</button>
       <button class="status-opt" data-status="busy" onclick="setStatus('busy')">🔴 Busy</button>
+      <button class="status-opt" data-status="gaming" onclick="setStatus('gaming')">🎮 Gaming</button>
+      <button class="status-opt" data-status="studying" onclick="setStatus('studying')">📚 Studying</button>
+      <button class="status-opt" data-status="listening" onclick="setStatus('listening')">🎵 Listening</button>
+      <button class="status-opt" data-status="coding" onclick="setStatus('coding')">💻 Coding</button>
+      <button class="status-opt" data-status="eating" onclick="setStatus('eating')">🍔 Eating</button>
       <button class="status-opt" data-status="offline" onclick="setStatus('offline')" style="grid-column:span 2">⚫ Appear Offline</button>
     </div>
     <div id="status-away-time" style="display:none;margin-bottom:14px">
@@ -1471,8 +1475,8 @@ async function doLogin(){
   // Set ME immediately with basic info so showApp() doesn't wait for DB
   ME={id:data.user.id,username:data.user.email?.split('@')[0]||'user',bio:'',avatar_url:''};
   showApp();
-  // Then load full profile in background
-  loadMe(data.user.id);
+  // Load full profile in background then refresh status UI
+  loadMe(data.user.id).then(()=>initStatusUI());
 }
 
 async function doSignup(){
@@ -1626,7 +1630,14 @@ function startPresence(){
       presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:_myStatus==='auto'?'online':_myStatus}});
       if(heartbeatInterval)clearInterval(heartbeatInterval);
       heartbeatInterval=setInterval(()=>{
-        const activeStatus=_myStatus==='auto'?((Date.now()-_lastActivity>_awayMinutes*60*1000)?'away':'online'):_myStatus;
+        let activeStatus;
+        if(_myStatus==='auto'){
+          const inactive=Date.now()-_lastActivity>_awayMinutes*60*1000;
+          activeStatus=inactive?'away':'online';
+          _wasAway=inactive;
+        }else{
+          activeStatus=_myStatus;
+        }
         presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:activeStatus}});
         const cutoff=Date.now()-45000;
         Object.keys(onlineTimestamps).forEach(uid=>{if(onlineTimestamps[uid]<cutoff){onlineUsers.delete(uid);delete onlineTimestamps[uid];}});
@@ -3880,27 +3891,31 @@ let _awayMinutes=10;
 let _lastActivity=Date.now();
 let _autoAwayTimeout=null;
 
-// Track user activity for auto-away
-['mousemove','keydown','touchstart','click'].forEach(e=>{
-  document.addEventListener(e,()=>{
-    _lastActivity=Date.now();
-    if(_myStatus==='auto'){
-      // If was auto-away, restore to online
-      if(_autoAwayTimeout)clearTimeout(_autoAwayTimeout);
-      scheduleAutoAway();
-    }
-  },{passive:true});
-});
-
 function scheduleAutoAway(){
   if(_autoAwayTimeout)clearTimeout(_autoAwayTimeout);
+  if(_myStatus!=='auto')return;
   _autoAwayTimeout=setTimeout(()=>{
-    if(_myStatus==='auto'){
-      // User inactive — broadcast away status
-      if(presenceCh)presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:'away'}});
-    }
+    if(_myStatus!=='auto')return;
+    // User inactive — broadcast away to everyone
+    if(presenceCh)presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:'away'}});
+    console.log('Auto: switched to Away');
   },_awayMinutes*60*1000);
 }
+
+// Track activity — when user interacts, broadcast online immediately
+let _wasAway=false;
+['mousemove','keydown','touchstart','click','scroll'].forEach(e=>{
+  document.addEventListener(e,()=>{
+    _lastActivity=Date.now();
+    if(_myStatus!=='auto')return;
+    if(_wasAway){
+      _wasAway=false;
+      // User came back — broadcast online immediately
+      if(presenceCh)presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:'online'}});
+    }
+    scheduleAutoAway();
+  },{passive:true});
+});
 
 async function setStatus(status){
   _myStatus=status;
@@ -3912,10 +3927,10 @@ async function setStatus(status){
   });
   // Show away time picker only for auto
   document.getElementById('status-away-time').style.display=status==='auto'?'block':'none';
-  // Broadcast immediately
-  const broadcastStatus=status==='auto'?'online':status;
+  const broadcastStatus=_myStatus==='auto'?'online':_myStatus;
   if(presenceCh)presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:broadcastStatus}});
-  showToast(`Status set to ${status==='auto'?'Auto':status} ✅`);
+  const labels={auto:'🔄 Auto',away:'🟡 Away',busy:'🔴 Busy',gaming:'🎮 Gaming',studying:'📚 Studying',listening:'🎵 Listening',coding:'💻 Coding',eating:'🍔 Eating',offline:'⚫ Appear Offline'};
+  showToast(`Status: ${labels[status]||status} ✅`);
   if(status==='auto')scheduleAutoAway();
 }
 
@@ -3932,9 +3947,20 @@ function getStatusDot(status){
 }
 
 function getStatusText(uid,status){
-  if(!onlineUsers.has(uid))return {text:'Offline',cls:'',dot:'offline'};
+  if(!onlineUsers.has(uid))return{text:'Offline',cls:'',dot:'offline'};
   const s=userStatuses[uid]||'online';
-  const map={online:{text:'Online',cls:'online',dot:'online'},away:{text:'Away',cls:'',dot:'away'},busy:{text:'Busy',cls:'',dot:'busy'},offline:{text:'Offline',cls:'',dot:'offline'}};
+  const map={
+    online:   {text:'Online',      cls:'online',dot:'online'},
+    auto:     {text:'Online',      cls:'online',dot:'online'},
+    away:     {text:'Away',        cls:'',       dot:'away'},
+    busy:     {text:'Busy',        cls:'',       dot:'busy'},
+    gaming:   {text:'🎮 Gaming',   cls:'online', dot:'online'},
+    studying: {text:'📚 Studying', cls:'online', dot:'online'},
+    listening:{text:'🎵 Listening',cls:'online', dot:'online'},
+    coding:   {text:'💻 Coding',   cls:'online', dot:'online'},
+    eating:   {text:'🍔 Eating',   cls:'online', dot:'online'},
+    offline:  {text:'Offline',     cls:'',       dot:'offline'},
+  };
   return map[s]||map.online;
 }
 
@@ -3944,13 +3970,20 @@ function getStatusText(uid,status){
 function initStatusUI(){
   // Load saved away time
   _awayMinutes=parseInt(localStorage.getItem('nexus_away_min')||'10');
-  document.getElementById('away-time-select').value=String(_awayMinutes);
-  // Load my status from profile
+  const sel=document.getElementById('away-time-select');
+  if(sel)sel.value=String(_awayMinutes);
+  // Load my status from profile (loaded from DB in loadMe)
   const s=ME?.status||'auto';
   _myStatus=s;
   document.querySelectorAll('.status-opt').forEach(b=>b.classList.toggle('active',b.dataset.status===s));
-  document.getElementById('status-away-time').style.display=s==='auto'?'block':'none';
+  const awayDiv=document.getElementById('status-away-time');
+  if(awayDiv)awayDiv.style.display=s==='auto'?'block':'none';
   if(s==='auto')scheduleAutoAway();
+  // Immediately broadcast current status so others see correct status
+  if(presenceCh){
+    const broadcastStatus=s==='auto'?'online':s;
+    presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:broadcastStatus}});
+  }
 }
 
 // ===== VOICE MESSAGES =====
