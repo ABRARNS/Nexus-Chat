@@ -541,6 +541,28 @@ textarea.msg-txt:focus{border-color:rgba(0,200,255,.3);box-shadow:0 0 0 3px rgba
 .fi::placeholder{color:var(--t4)}
 textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 .mbtn{width:100%;padding:12px;border-radius:var(--r12);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .2s;margin-bottom:8px;border:1px solid transparent}
+/* Status buttons */
+.status-opt{padding:10px 8px;border-radius:var(--r8);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--card2);border:1px solid var(--border);color:var(--t2);transition:all .2s;text-align:center}
+.status-opt:hover{border-color:rgba(0,229,255,.3);color:var(--cyan)}
+.status-opt.active{background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.4);color:var(--cyan)}
+/* Status dot colors */
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.status-dot.online{background:var(--green);box-shadow:0 0 6px rgba(0,255,136,.5)}
+.status-dot.away{background:#ffd700;box-shadow:0 0 6px rgba(255,215,0,.5)}
+.status-dot.busy{background:var(--pink);box-shadow:0 0 6px rgba(255,45,120,.5)}
+.status-dot.offline{background:var(--t4)}
+/* Voice message */
+.voice-msg{display:flex;align-items:center;gap:8px;padding:4px 0;min-width:160px;max-width:220px}
+.voice-play{width:32px;height:32px;border-radius:50%;background:var(--cyan);border:none;color:#000;font-size:13px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.voice-play:hover{transform:scale(1.1)}
+.voice-wave{flex:1;height:28px;display:flex;align-items:center;gap:2px;cursor:pointer}
+.voice-bar{width:3px;border-radius:2px;background:rgba(0,229,255,.4);flex-shrink:0;transition:background .2s}
+.voice-bar.active{background:var(--cyan)}
+.voice-time{font-size:10px;font-family:var(--mono);color:var(--t3);flex-shrink:0;min-width:30px}
+/* Record button */
+.record-btn{width:34px;height:34px;border-radius:50%;background:none;border:1px solid rgba(0,200,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--t3);transition:all .2s;flex-shrink:0}
+.record-btn:hover{background:rgba(255,45,120,.1);border-color:rgba(255,45,120,.3);color:var(--pink)}
+.record-btn.recording{background:rgba(255,45,120,.15);border-color:var(--pink);color:var(--pink);animation:onlinePulse 1s ease-in-out infinite}
 .mbtn.prim{background:linear-gradient(135deg,var(--purple),var(--cyan));color:#000;border:none}
 .mbtn.prim:hover{opacity:.9}
 .mbtn.sec{background:var(--card2);color:var(--t2);border-color:var(--border)}
@@ -905,6 +927,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
                 <div class="input-tools">
                   <div class="emoji-wrap"><button class="it" onclick="toggleEmoji()">☺</button><div class="emoji-picker" id="emoji-picker"></div></div>
                   <button class="it" onclick="document.getElementById('img-input').click()">🖼</button>
+                  <button class="record-btn" id="record-btn" onmousedown="startRecord()" ontouchstart="startRecord(event)" onmouseup="stopRecord()" ontouchend="stopRecord(event)" title="Hold to record voice message">🎙</button>
                   <button id="vibe-bomb-btn" class="it vibe-bomb-btn" onclick="sendVibeBomb()" title="Vibe Bomb — explodes on their screen!" style="font-size:18px;position:relative">💥</button>
                   <input type="file" id="img-input" accept="image/*" style="display:none" onchange="attachImage(this)">
                 </div>
@@ -1140,6 +1163,26 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
     <div class="av-ring" onclick="document.getElementById('av-input').click()"><img id="av-preview" src="" style="display:none"><div class="av-hint" id="av-hint">📷<br>Upload photo</div></div>
     <div class="fl">Username</div><input class="fi" id="edit-user" placeholder="username">
     <div class="fl">Bio</div><textarea class="fi" id="edit-bio" placeholder="Tell people about yourself…"></textarea>
+
+    <!-- Status Selector -->
+    <div class="fl">Status</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px" id="status-grid">
+      <button class="status-opt" data-status="auto" onclick="setStatus('auto')">🔄 Auto</button>
+      <button class="status-opt" data-status="online" onclick="setStatus('online')">🟢 Online</button>
+      <button class="status-opt" data-status="away" onclick="setStatus('away')">🟡 Away</button>
+      <button class="status-opt" data-status="busy" onclick="setStatus('busy')">🔴 Busy</button>
+      <button class="status-opt" data-status="offline" onclick="setStatus('offline')" style="grid-column:span 2">⚫ Appear Offline</button>
+    </div>
+    <div id="status-away-time" style="display:none;margin-bottom:14px">
+      <div class="fl">Auto-Away after</div>
+      <select class="fi" id="away-time-select" style="height:38px" onchange="saveAwayTime(this.value)">
+        <option value="5">5 minutes</option>
+        <option value="10" selected>10 minutes</option>
+        <option value="15">15 minutes</option>
+        <option value="30">30 minutes</option>
+        <option value="60">1 hour</option>
+      </select>
+    </div>
     <button class="mbtn prim" onclick="saveProfile()">SAVE CHANGES</button>
     <button class="mbtn sec" onclick="closeModal('profile-modal');openBlockedList()">🚫 Blocked Users</button>
     <button class="mbtn sec" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Switch to Light Mode</button>
@@ -1276,7 +1319,7 @@ setTimeout(initAuthBg,100);
 let ME=null, currentChat=null, currentProfile=null;
 let currentGroup=null, currentGroupData=null, currentGroupRole='member';
 let chatChannel=null, groupChannel=null, presenceCh=null, globalCh=null, inboxCh=null;
-let onlineUsers=new Set(), onlineTimestamps={}, heartbeatInterval=null;
+let onlineUsers=new Set(), onlineTimestamps={}, heartbeatInterval=null, userStatuses={};
 let allUsers=[], allGroups=[], groupMembers=[], groupMembersCache={};
 let loadedMsgs=[], loadedGroupMsgs=[], myLikedPosts=new Set();
 let notifs=[], emojiCat='😀', groupEmojiCat='😀';
@@ -1370,6 +1413,7 @@ async function showApp(){
   loadTheme();
   checkNotifStatus();
   checkShowNotifBanner();
+  initStatusUI();
   loadBlocks();
   loadFollowing();
   loadConvos();
@@ -1566,6 +1610,7 @@ function startPresence(){
     if(!payload?.uid||payload.uid===ME.id)return;
     onlineTimestamps[payload.uid]=Date.now();
     onlineUsers.add(payload.uid);
+    if(payload.status)userStatuses[payload.uid]=payload.status;
     updateOnlineCount();
     updateOnlineUI();
   });
@@ -1578,10 +1623,11 @@ function startPresence(){
   });
   presenceCh.subscribe(status=>{
     if(status==='SUBSCRIBED'){
-      presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
+      presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:_myStatus==='auto'?'online':_myStatus}});
       if(heartbeatInterval)clearInterval(heartbeatInterval);
       heartbeatInterval=setInterval(()=>{
-        presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
+        const activeStatus=_myStatus==='auto'?((Date.now()-_lastActivity>_awayMinutes*60*1000)?'away':'online'):_myStatus;
+        presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:activeStatus}});
         const cutoff=Date.now()-45000;
         Object.keys(onlineTimestamps).forEach(uid=>{if(onlineTimestamps[uid]<cutoff){onlineUsers.delete(uid);delete onlineTimestamps[uid];}});
         updateOnlineUI();
@@ -1600,13 +1646,31 @@ function startPresence(){
 }
 
 function updateOnlineUI(){
-  document.querySelectorAll('.ci-online').forEach(d=>{const ci=d.closest('.ci');if(!ci)return;d.classList.toggle('on',onlineUsers.has(ci.id.replace('ci-','')));});
+  // Update convo list dots with status colors
+  document.querySelectorAll('.ci-online').forEach(d=>{
+    const ci=d.closest('.ci');if(!ci)return;
+    const uid=ci.id.replace('ci-','');
+    const isOn=onlineUsers.has(uid);
+    d.classList.toggle('on',isOn);
+    if(isOn){
+      const s=userStatuses[uid]||'online';
+      const colors={online:'var(--green)',away:'#ffd700',busy:'var(--pink)'};
+      d.style.background=colors[s]||colors.online;
+      d.style.boxShadow=s==='away'?'0 0 6px rgba(255,215,0,.5)':s==='busy'?'0 0 6px rgba(255,45,120,.5)':'0 0 6px rgba(0,255,136,.5)';
+    }else{
+      d.style.background='';d.style.boxShadow='';
+    }
+  });
   if(currentChat){
-    const on=onlineUsers.has(currentChat);
+    const statusInfo=getStatusText(currentChat,userStatuses[currentChat]);
     const st=document.getElementById('ch-status'),txt=document.getElementById('ch-status-txt');
-    if(st&&txt){st.className='ch-status'+(on?' online':'');txt.textContent=on?'Online':'Offline';}
+    if(st&&txt){st.className='ch-status'+(statusInfo.cls?' '+statusInfo.cls:'');txt.textContent=statusInfo.text;}
     const rpst=document.getElementById('rp-status');
-    if(rpst){rpst.style.color=on?'var(--green)':'var(--t4)';rpst.textContent=on?'● Online':'○ Offline';}
+    if(rpst){
+      const on=onlineUsers.has(currentChat);
+      rpst.style.color=on?'var(--green)':'var(--t4)';
+      rpst.textContent=on?`● ${statusInfo.text}`:'○ Offline';
+    }
   }
   document.querySelectorAll('[data-uid]').forEach(card=>{
     const uid=card.dataset.uid;
@@ -1744,9 +1808,9 @@ async function openChat(uid){
   if(p.avatar_url){avImg.src=p.avatar_url;avImg.style.display='block';avInit.style.display='none';}
   else{avImg.style.display='none';avInit.style.display='';avInit.textContent=p.username[0].toUpperCase();}
   document.getElementById('ch-name').textContent='@'+p.username;
-  const on=onlineUsers.has(uid);
-  document.getElementById('ch-status').className='ch-status'+(on?' online':'');
-  document.getElementById('ch-status-txt').textContent=on?'Online':'Offline';
+  const statusInfo=getStatusText(uid,userStatuses[uid]);
+  document.getElementById('ch-status').className='ch-status'+(statusInfo.cls?' '+statusInfo.cls:'');
+  document.getElementById('ch-status-txt').textContent=statusInfo.text;
   document.getElementById('msg-input').placeholder=`Message @${p.username}…`;
   document.getElementById('chat-empty').style.display='none';
   document.getElementById('active-chat').style.display='flex';
@@ -2021,9 +2085,10 @@ function makeBubble(msg,isFirst,groupMode,membersList){
   const hasImg=msg.media_type==='image'&&msg.media_url;
   const isFwd=(msg.content||'').startsWith('↪ ');
   const isDisappearing=msg.disappears_at&&new Date(msg.disappears_at)>new Date();
+  const isVoice=(msg.content||'').startsWith('[voice:');
   const contentText=hasImg?(msg.content||''):msg.content||'';
-  const renderedText=renderContent(contentText,groupMode?membersList:null);
-  const content=hasImg?`${renderedText?`<div style="margin-bottom:6px">${renderedText}</div>`:''}<img class="msg-img" src="${msg.media_url}" onclick="openLbox('${msg.media_url.replace(/'/g,"\\'")}')">`:renderedText;
+  const renderedText=isVoice?renderVoiceMsg(msg.content,isMe)||renderContent(contentText):renderContent(contentText,groupMode?membersList:null);
+  const content=hasImg?`${renderedText?`<div style="margin-bottom:6px">${renderedText}</div>`:''}<img class="msg-img" src="${msg.media_url}" onclick="openLbox('${msg.media_url.replace(/'/g,"\\'")}')">`:(isVoice?renderedText:renderedText);
   const avHtml=avUrl?`<img src="${avUrl}">`:`<div style="background:${col};width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${uname[0].toUpperCase()}</div>`;
   const readTime=msg.read_at?new Date(msg.read_at).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'}):'';
   const ticks=(!groupMode&&isMe)?`<span class="msg-tick ${msg.read_at?'read':''}" title="${msg.read_at?'Seen at '+readTime:''}">${msg.read_at?'✓✓ Seen':'✓✓'}</span>`:'';
@@ -3809,6 +3874,187 @@ function showConfirmModal(title,body,confirmTxt,cancelTxt,type='normal'){
 }
 
 // -- ENABLE NOTIFICATIONS --
+// ===== STATUS SYSTEM =====
+let _myStatus='auto'; // auto, online, away, busy, offline
+let _awayMinutes=10;
+let _lastActivity=Date.now();
+let _autoAwayTimeout=null;
+
+// Track user activity for auto-away
+['mousemove','keydown','touchstart','click'].forEach(e=>{
+  document.addEventListener(e,()=>{
+    _lastActivity=Date.now();
+    if(_myStatus==='auto'){
+      // If was auto-away, restore to online
+      if(_autoAwayTimeout)clearTimeout(_autoAwayTimeout);
+      scheduleAutoAway();
+    }
+  },{passive:true});
+});
+
+function scheduleAutoAway(){
+  if(_autoAwayTimeout)clearTimeout(_autoAwayTimeout);
+  _autoAwayTimeout=setTimeout(()=>{
+    if(_myStatus==='auto'){
+      // User inactive — broadcast away status
+      if(presenceCh)presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:'away'}});
+    }
+  },_awayMinutes*60*1000);
+}
+
+async function setStatus(status){
+  _myStatus=status;
+  // Save to DB
+  await sb.from('profiles').update({status}).eq('id',ME.id);
+  // Update UI
+  document.querySelectorAll('.status-opt').forEach(b=>{
+    b.classList.toggle('active',b.dataset.status===status);
+  });
+  // Show away time picker only for auto
+  document.getElementById('status-away-time').style.display=status==='auto'?'block':'none';
+  // Broadcast immediately
+  const broadcastStatus=status==='auto'?'online':status;
+  if(presenceCh)presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id,status:broadcastStatus}});
+  showToast(`Status set to ${status==='auto'?'Auto':status} ✅`);
+  if(status==='auto')scheduleAutoAway();
+}
+
+function saveAwayTime(val){
+  _awayMinutes=parseInt(val);
+  localStorage.setItem('nexus_away_min',val);
+  scheduleAutoAway();
+}
+
+function getStatusDot(status){
+  const s=status||'offline';
+  const colors={online:'var(--green)',away:'#ffd700',busy:'var(--pink)',offline:'var(--t4)'};
+  return `<span class="status-dot ${s}" style="background:${colors[s]||colors.offline}"></span>`;
+}
+
+function getStatusText(uid,status){
+  if(!onlineUsers.has(uid))return {text:'Offline',cls:'',dot:'offline'};
+  const s=userStatuses[uid]||'online';
+  const map={online:{text:'Online',cls:'online',dot:'online'},away:{text:'Away',cls:'',dot:'away'},busy:{text:'Busy',cls:'',dot:'busy'},offline:{text:'Offline',cls:'',dot:'offline'}};
+  return map[s]||map.online;
+}
+
+// Store other users' statuses
+// Store other users' statuses - declared at top with onlineUsers
+
+function initStatusUI(){
+  // Load saved away time
+  _awayMinutes=parseInt(localStorage.getItem('nexus_away_min')||'10');
+  document.getElementById('away-time-select').value=String(_awayMinutes);
+  // Load my status from profile
+  const s=ME?.status||'auto';
+  _myStatus=s;
+  document.querySelectorAll('.status-opt').forEach(b=>b.classList.toggle('active',b.dataset.status===s));
+  document.getElementById('status-away-time').style.display=s==='auto'?'block':'none';
+  if(s==='auto')scheduleAutoAway();
+}
+
+// ===== VOICE MESSAGES =====
+let _mediaRecorder=null,_audioChunks=[],_recordingTimer=null,_recordStart=0;
+const MAX_RECORD_SECS=30;
+
+async function startRecord(e){
+  if(e)e.preventDefault();
+  if(_mediaRecorder)return;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    _audioChunks=[];
+    _mediaRecorder=new MediaRecorder(stream,{mimeType:MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm'});
+    _mediaRecorder.ondataavailable=e=>_audioChunks.push(e.data);
+    _mediaRecorder.start(100);
+    _recordStart=Date.now();
+    const btn=document.getElementById('record-btn');
+    if(btn)btn.classList.add('recording');
+    showToast('🎙 Recording… release to send');
+    // Auto-stop at 30 seconds
+    _recordingTimer=setTimeout(stopRecord,MAX_RECORD_SECS*1000);
+  }catch(err){
+    showToast('❌ Microphone access denied');
+  }
+}
+
+async function stopRecord(e){
+  if(e)e.preventDefault();
+  if(!_mediaRecorder)return;
+  clearTimeout(_recordingTimer);
+  const duration=Math.round((Date.now()-_recordStart)/1000);
+  if(duration<1){
+    _mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+    _mediaRecorder=null;
+    const btn=document.getElementById('record-btn');
+    if(btn)btn.classList.remove('recording');
+    showToast('⚠️ Hold longer to record');
+    return;
+  }
+  _mediaRecorder.stop();
+  _mediaRecorder.onstop=async()=>{
+    const blob=new Blob(_audioChunks,{type:_mediaRecorder.mimeType||'audio/webm'});
+    _mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+    _mediaRecorder=null;
+    const btn=document.getElementById('record-btn');
+    if(btn)btn.classList.remove('recording');
+    await uploadAndSendVoice(blob,duration);
+  };
+}
+
+async function uploadAndSendVoice(blob,duration){
+  if(!currentChat||!ME?.id)return;
+  showToast('⏳ Sending voice message…');
+  const filename=`${ME.id}/${Date.now()}.webm`;
+  const{data,error}=await sb.storage.from('voice-messages').upload(filename,blob,{contentType:'audio/webm',upsert:false});
+  if(error){showToast('❌ Upload failed: '+error.message);return;}
+  const{data:{publicUrl}}=sb.storage.from('voice-messages').getPublicUrl(filename);
+  // Send as message with special prefix
+  const content=`[voice:${duration}]${publicUrl}`;
+  const newMsg={id:crypto.randomUUID(),sender_id:ME.id,receiver_id:currentChat,content,created_at:new Date().toISOString()};
+  appendMsg(newMsg);
+  const{error:e2}=await sb.from('messages').insert({sender_id:ME.id,receiver_id:currentChat,content});
+  if(e2){showToast('❌ Send failed');return;}
+  if(chatChannel)chatChannel.send({type:'broadcast',event:'msg',payload:{...newMsg}});
+  sendPushToUser(currentChat,`@${ME.username||'Someone'}`,`🎙 Sent a voice message`);
+  loadConvos();
+  showToast('✅ Voice message sent!');
+}
+
+function renderVoiceMsg(content,isMine){
+  const match=content.match(/^\[voice:(\d+)\](.+)$/);
+  if(!match)return null;
+  const duration=parseInt(match[1]);
+  const url=match[2];
+  const bars=Array.from({length:20},(_,i)=>`<div class="voice-bar" id="vb-${i}" style="height:${6+Math.random()*16}px"></div>`).join('');
+  return `<div class="voice-msg">
+    <button class="voice-play" onclick="playVoice(this,'${url}')">▶</button>
+    <div class="voice-wave" onclick="seekVoice(event,this,'${url}')">${bars}</div>
+    <span class="voice-time">${duration}s</span>
+  </div>`;
+}
+
+const _audioPlayers={};
+function playVoice(btn,url){
+  if(_audioPlayers[url]&&!_audioPlayers[url].paused){
+    _audioPlayers[url].pause();
+    btn.textContent='▶';return;
+  }
+  if(!_audioPlayers[url])_audioPlayers[url]=new Audio(url);
+  const audio=_audioPlayers[url];
+  audio.play();
+  btn.textContent='⏸';
+  // Animate bars while playing
+  const wrap=btn.nextElementSibling;
+  const bars=[...wrap.querySelectorAll('.voice-bar')];
+  const total=audio.duration||parseInt(btn.parentElement.querySelector('.voice-time').textContent)||10;
+  const interval=setInterval(()=>{
+    const pct=audio.currentTime/total;
+    bars.forEach((b,i)=>b.classList.toggle('active',i/bars.length<=pct));
+  },100);
+  audio.onended=()=>{btn.textContent='▶';clearInterval(interval);bars.forEach(b=>b.classList.remove('active'));};
+  audio.onerror=()=>{btn.textContent='▶';clearInterval(interval);};
+}
+
 const FCM_VAPID='BIYSv9EXiS-OqpmTAl-e7myLQHq0cXAZwP69jI3_ygvv0IJmTu_dpwRucKtUU6T-IcB54Gpo1MYErqpNEkDx6xw';
 let _fcmToken=null;
 
