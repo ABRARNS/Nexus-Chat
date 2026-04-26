@@ -4686,17 +4686,23 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function getNPStyles(npItems){
   if(!npItems||typeof npItems!=='object')return{nameStyle:'',badgeEmoji:'',avatarStyle:''};
   let nameStyle='',badgeEmoji='',avatarStyle='';
-  // Username colors
+  // Username colors — use active key if set, else fall back to loop
   const uColors={username_red:'#ff3864',username_gold:'#ffd700',username_cyan:'#00e5ff',username_pink:'#ff69b4'};
-  for(const[k,v]of Object.entries(uColors)){if(npItems[k]){nameStyle=`color:${v}`;break;}}
-  if(npItems['username_rainbow'])nameStyle='background:linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;';
-  // Badges
-  const badges={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅',freeze_frame_badge:'⏸'};
-  for(const[k,v]of Object.entries(badges)){if(npItems[k]){badgeEmoji=v;break;}}
-  // Avatar borders
+  const activeUsername=npItems['_active_username']||'';
+  if(activeUsername==='username_rainbow'){
+    nameStyle='background:linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;';
+  } else if(uColors[activeUsername]){
+    nameStyle=`color:${uColors[activeUsername]}`;
+  }
+  // Badges — use active key directly
+  const allBadges={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅',freeze_frame_badge:'⏸'};
+  const activeBadge=npItems['_active_badge']||'';
+  if(allBadges[activeBadge]) badgeEmoji=allBadges[activeBadge];
+  // Avatar borders — use active key directly
   const bShadows={border_cyan:'0 0 0 3px rgba(0,229,255,.8),0 0 16px rgba(0,229,255,.4)',border_fire:'0 0 0 3px #ff6b00,0 0 20px #ff3800',border_diamond:'0 0 0 3px #b9f2ff,0 0 20px #7df9ff',border_pulse:'0 0 0 3px rgba(0,229,255,.6)'};
-  for(const[k,v]of Object.entries(bShadows)){if(npItems[k]){avatarStyle=`box-shadow:${v}`;break;}}
-  if(npItems['border_rainbow']||npItems['glow_up_frame'])avatarStyle='padding:2px;background:conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78);box-shadow:0 0 20px rgba(255,100,200,.4);';
+  const activeBorder=npItems['_active_border']||'';
+  if(bShadows[activeBorder]) avatarStyle=`box-shadow:${bShadows[activeBorder]}`;
+  else if(activeBorder==='border_rainbow'||activeBorder==='glow_up_frame') avatarStyle='padding:2px;background:conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78);box-shadow:0 0 20px rgba(255,100,200,.4);';
   return{nameStyle,badgeEmoji,avatarStyle};
 }
 function escAttr(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,50);}
@@ -4948,16 +4954,22 @@ function unequipItem(itemId){
   }
   else if(itemId.startsWith('border_')||itemId==='glow_up_frame'){
     localStorage.removeItem('nexus_active_border');
+    delete _npItems['_active_border'];
+    sb.from('profiles').update({np_items:_npItems}).eq('id',ME.id).then(()=>{});
     document.querySelectorAll('.my-av').forEach(el=>{el.style.boxShadow='';el.style.outline='';el.style.background='';el.style.padding='';});
     showToast('🔲 Border removed');
   }
   else if(itemId.startsWith('badge_')||itemId==='freeze_frame_badge'){
     localStorage.removeItem('nexus_active_badge');
+    delete _npItems['_active_badge'];
+    sb.from('profiles').update({np_items:_npItems}).eq('id',ME.id).then(()=>{});
     document.querySelectorAll('.np-badge-el').forEach(el=>el.remove());
     showToast('🏅 Badge removed');
   }
   else if(itemId.startsWith('username_')){
     localStorage.removeItem('nexus_active_username');
+    delete _npItems['_active_username'];
+    sb.from('profiles').update({np_items:_npItems}).eq('id',ME.id).then(()=>{});
     document.querySelectorAll('.post-name,.ci-name,.msg-sender').forEach(el=>{
       el.style.color='';el.style.background='';el.style.webkitBackgroundClip='';el.style.webkitTextFillColor='';
     });
@@ -4995,11 +5007,15 @@ function applyNPItem(itemId){
   const uColors={username_red:'#ff3864',username_gold:'#ffd700',username_cyan:'#00e5ff',username_pink:'#ff69b4'};
   if(uColors[itemId]){
     localStorage.setItem('nexus_active_username',itemId);
+    _npItems['_active_username']=itemId;
+    sb.from('profiles').update({np_items:_npItems}).eq('id',ME.id).then(()=>{});
     document.querySelectorAll('.post-name,.ci-name,.msg-sender').forEach(el=>{el.style.color=uColors[itemId];el.style.webkitTextFillColor='';});
     showToast('✨ Username color equipped!');return;
   }
   if(itemId==='username_rainbow'){
     localStorage.setItem('nexus_active_username',itemId);
+    _npItems['_active_username']=itemId;
+    sb.from('profiles').update({np_items:_npItems}).eq('id',ME.id).then(()=>{});
     document.querySelectorAll('.post-name,.ci-name,.msg-sender').forEach(el=>{
       el.style.background='linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff)';
       el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';
@@ -5016,11 +5032,15 @@ function applyNPItem(itemId){
   };
   if(bShadows[itemId]){
     localStorage.setItem('nexus_active_border',itemId);
+    _npItems['_active_border']=itemId;
+    sb.from('profiles').update({np_items:_npItems}).eq('id',ME.id).then(()=>{});
     document.querySelectorAll('.my-av').forEach(el=>{el.style.boxShadow=bShadows[itemId];el.style.background='';el.style.padding='';});
     showToast('🔲 Border equipped!');return;
   }
   if(itemId==='border_rainbow'||itemId==='glow_up_frame'){
     localStorage.setItem('nexus_active_border',itemId);
+    _npItems['_active_border']=itemId;
+    sb.from('profiles').update({np_items:_npItems}).eq('id',ME.id).then(()=>{});
     document.querySelectorAll('.my-av').forEach(el=>{
       el.style.padding='2px';
       el.style.background='conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78)';
@@ -5035,6 +5055,8 @@ function applyNPItem(itemId){
     // Remove old badge first
     document.querySelectorAll('.np-badge-el').forEach(el=>el.remove());
     localStorage.setItem('nexus_active_badge',itemId);
+    _npItems['_active_badge']=itemId;
+    sb.from('profiles').update({np_items:_npItems}).eq('id',ME.id).then(()=>{});
     // Add to top-right avatar area
     const myAv=document.getElementById('top-av-wrap')||document.querySelector('.my-av')?.parentElement;
     if(myAv){
