@@ -1395,10 +1395,12 @@ const URL_REGEX=/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{
 
 // -- INIT --
 async function init(){
+  console.log('[INIT] Starting...');
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/Nexus-Chat/sw.js').catch(()=>{});
 
   // Clean error params from URL
   if(window.location.search.includes('error_code=')||window.location.hash.includes('error_code=')){
+    console.log('[INIT] Error code in URL, showing auth');
     window.history.replaceState({},document.title,window.location.pathname);
     showAuth();
     showErr('Google sign in failed — please try again');
@@ -1414,9 +1416,11 @@ async function init(){
   };
 
   try {
+    console.log('[INIT] Getting session...');
     // Implicit flow: Supabase automatically detects tokens in URL hash
     // and restores session from localStorage. Just check getSession().
     const{data:{session}}=await withTimeout(sb.auth.getSession());
+    console.log('[INIT] Session:', session);
 
     if(session?.user){
       await ensureProfile(session.user);
@@ -1426,13 +1430,14 @@ async function init(){
       return;
     }
   } catch (err) {
-    console.warn('Supabase connection issue:', err.message);
+    console.warn('[INIT] Supabase connection issue:', err.message);
     // Continue to auth screen - don't block forever
   }
 
   // No session yet — listen for implicit flow to complete (fires when
   // Supabase detects tokens in URL hash after Google redirect)
   sb.auth.onAuthStateChange(async(event,session)=>{
+    console.log('[INIT] Auth state change:', event);
     // Only handle Google OAuth redirect - email login handled directly in doLogin
     if(event==='SIGNED_IN'&&session?.user&&!ME&&!_appStarted){
       window.history.replaceState({},document.title,window.location.pathname);
@@ -1443,6 +1448,7 @@ async function init(){
     if(event==='SIGNED_OUT'){ME=null;}
   });
 
+  console.log('[INIT] Calling showAuth...');
   showAuth();
 }
 
