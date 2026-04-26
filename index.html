@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
-<title>NEXUS-CHAT — Real Social Network</title>
+<title>NEXUS-CHAT v8.1 — Real Social Network</title>
 
 <!-- SEO -->
 <meta name="description" content="NEXUS is a real-time social network — DMs, group chats, 24-hour stories, a public feed, and more. Built for people who want a fast, minimal, distraction-free social experience.">
@@ -333,7 +333,7 @@ body::after{content:'';position:fixed;top:-30%;left:10%;width:80%;height:70%;
 .msg-row.me .bubble{animation:msgInRight .35s cubic-bezier(.34,1.56,.64,1) both}
 .msg-row:not(.me) .bubble{animation:msgInLeft .35s cubic-bezier(.34,1.56,.64,1) both}
 .bubble.them{background:rgba(20,24,40,.9);border:1px solid rgba(0,200,255,.08);border-bottom-left-radius:5px;color:var(--t1);backdrop-filter:blur(8px)}
-.bubble.me{background:linear-gradient(135deg,rgba(0,100,255,.2),rgba(124,58,255,.2));border:1px solid rgba(0,200,255,.2);border-bottom-right-radius:5px;color:var(--t1);backdrop-filter:blur(8px)}
+.bubble.me{background:var(--my-bubble-bg,linear-gradient(135deg,rgba(0,100,255,.2),rgba(124,58,255,.2)));border:1px solid rgba(0,200,255,.2);border-bottom-right-radius:5px;color:var(--t1);backdrop-filter:blur(8px)}
 .bubble.faded{opacity:.5}
 .bubble:hover .msg-actions{opacity:1;transform:translateY(0);pointer-events:all}
 /* Message action bar — clean floating pill */
@@ -542,6 +542,29 @@ textarea.msg-txt:focus{border-color:rgba(0,200,255,.3);box-shadow:0 0 0 3px rgba
 textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 .mbtn{width:100%;padding:12px;border-radius:var(--r12);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .2s;margin-bottom:8px;border:1px solid transparent}
 /* Status buttons */
+/* ===== NP STORE ===== */
+.store-cat-btn{flex-shrink:0;padding:7px 14px;border-radius:var(--r99);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--card);border:1px solid var(--border);color:var(--t3);transition:all .2s;white-space:nowrap}
+.store-cat-btn:hover{border-color:rgba(0,200,255,.3);color:var(--cyan)}
+.store-cat-btn.active{background:rgba(0,200,255,.1);border-color:rgba(0,200,255,.4);color:var(--cyan)}
+.store-card{background:var(--card);border:1px solid rgba(0,200,255,.08);border-radius:18px;padding:14px;transition:all .3s;position:relative;overflow:hidden;transform-style:preserve-3d}
+.store-card:hover{border-color:rgba(0,200,255,.25);transform:translateY(-4px) rotateX(3deg);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.store-card.trending::after{content:'🔥 TRENDING';position:absolute;top:8px;right:8px;font-size:8px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,#ff6b00,#ff2d78);color:#fff;padding:3px 8px;border-radius:var(--r99);font-family:var(--mono)}
+.store-card.new::after{content:'✨ NEW';position:absolute;top:8px;right:8px;font-size:8px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff;padding:3px 8px;border-radius:var(--r99);font-family:var(--mono)}
+.store-card.weekly::after{content:'📅 WEEK';position:absolute;top:8px;right:8px;font-size:7px;font-weight:800;letter-spacing:.5px;background:linear-gradient(135deg,#00c853,#00e5ff);color:#000;padding:3px 8px;border-radius:var(--r99);font-family:var(--mono)}
+.store-card.owned{border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.04)}
+.store-preview{border-radius:var(--r12);height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;overflow:hidden;position:relative;background:var(--bg3)}
+.store-item-name{font-size:13px;font-weight:700;margin-bottom:3px;font-family:var(--display)}
+.store-item-desc{font-size:10px;color:var(--t4);font-family:var(--mono);margin-bottom:8px;line-height:1.4}
+.store-price{font-size:12px;font-weight:700;color:var(--cyan);font-family:var(--mono);margin-bottom:8px}
+.store-buy-btn{width:100%;padding:8px;border-radius:var(--r8);border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .2s}
+.store-buy-btn.can-buy{background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff}
+.store-buy-btn.can-buy:hover{transform:scale(1.03);box-shadow:0 4px 16px rgba(0,180,255,.3)}
+.store-buy-btn.owned-btn{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.2);cursor:default}
+.store-buy-btn.no-np{background:var(--bg3);color:var(--t4);cursor:not-allowed}
+.store-card.equipped{border-color:rgba(0,255,136,.4)!important;box-shadow:0 0 16px rgba(0,255,136,.1)!important}
+.store-reset-btn{background:rgba(255,45,120,.08);border:1px solid rgba(255,45,120,.2);border-radius:var(--r8);color:var(--pink);font-size:11px;font-weight:600;cursor:pointer;padding:5px 12px;font-family:var(--font);transition:all .2s}
+.store-reset-btn:hover{background:rgba(255,45,120,.15)}
+
 .status-opt{padding:10px 8px;border-radius:var(--r8);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);background:var(--card2);border:1px solid var(--border);color:var(--t2);transition:all .2s;text-align:center}
 .status-opt:hover{border-color:rgba(0,229,255,.3);color:var(--cyan)}
 .status-opt.active{background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.4);color:var(--cyan)}
@@ -876,6 +899,7 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
       <div class="nav-btn" id="nav-people" onclick="setView('people',this)"><span class="nav-icon">🌍</span><span class="nav-lbl">meet</span></div>
       <div class="nav-sep"></div>
       <div class="nav-btn" id="nav-feed" onclick="setView('feed',this)"><span class="nav-icon">📰</span><span class="nav-lbl">feed</span></div>
+      <div class="nav-btn" id="nav-store" onclick="setView('store',this)"><span class="nav-icon">🏪</span><span class="nav-lbl">store</span></div>
       <div class="nav-sep nav-exit"></div>
       <div class="nav-btn" onclick="signOut()"><span class="nav-icon">🚪</span><span class="nav-lbl">exit</span></div>
     </nav>
@@ -1023,6 +1047,37 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
           <div style="flex:1"><textarea class="composer-ta" id="post-input" placeholder="What's on your mind?"></textarea><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="post-btn" onclick="createPost()">POST</button></div></div>
         </div>
         <div id="feed-posts"></div>
+      </div>
+
+      <!-- NEXUSPOINTS STORE VIEW -->
+      <div class="view" id="view-store" style="overflow-y:auto;padding:0">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,rgba(0,50,150,.3),rgba(124,58,255,.2));padding:20px 18px 16px;border-bottom:1px solid rgba(0,200,255,.1);position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="font-size:20px;font-weight:900;font-family:var(--display);color:var(--cyan)">🏪 NP Store</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="store-reset-btn" onclick="resetAllItems()">↺ Reset All</button>
+              <div id="np-balance-badge" style="background:linear-gradient(135deg,var(--purple),var(--cyan));border-radius:var(--r99);padding:6px 14px;font-size:13px;font-weight:700;color:#fff;font-family:var(--mono);display:flex;align-items:center;gap:6px">
+                <span>💎</span><span id="np-balance-display">0 NP</span>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--t4);font-family:var(--mono)">// earn NP by using nexus · spend on customizations</div>
+        </div>
+
+        <!-- How to earn -->
+        <div style="padding:14px 18px 0">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t4);font-family:var(--mono);margin-bottom:10px">💰 How to earn NP</div>
+          <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none" id="np-earn-row"></div>
+        </div>
+
+        <!-- Store categories -->
+        <div style="padding:14px 18px 0">
+          <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none" id="store-cats"></div>
+        </div>
+
+        <!-- Store grid -->
+        <div id="store-grid" style="padding:0 18px 80px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px"></div>
       </div>
 
     </div>
@@ -1350,22 +1405,36 @@ async function init(){
     return;
   }
 
-  // Implicit flow: Supabase automatically detects tokens in URL hash
-  // and restores session from localStorage. Just check getSession().
-  const{data:{session}}=await sb.auth.getSession().catch(()=>({data:{session:null}}));
+  // Timeout wrapper for Supabase calls
+  const withTimeout = (promise, ms = 8000) => {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), ms))
+    ]);
+  };
 
-  if(session?.user){
-    await ensureProfile(session.user);
-    await loadMe(session.user.id);
-    window.history.replaceState({},document.title,window.location.pathname);
-    showApp();
-    return;
+  try {
+    // Implicit flow: Supabase automatically detects tokens in URL hash
+    // and restores session from localStorage. Just check getSession().
+    const{data:{session}}=await withTimeout(sb.auth.getSession());
+
+    if(session?.user){
+      await ensureProfile(session.user);
+      await loadMe(session.user.id);
+      window.history.replaceState({},document.title,window.location.pathname);
+      showApp();
+      return;
+    }
+  } catch (err) {
+    console.warn('Supabase connection issue:', err.message);
+    // Continue to auth screen - don't block forever
   }
 
   // No session yet — listen for implicit flow to complete (fires when
   // Supabase detects tokens in URL hash after Google redirect)
   sb.auth.onAuthStateChange(async(event,session)=>{
-    if(event==='SIGNED_IN'&&session?.user&&!ME){
+    // Only handle Google OAuth redirect - email login handled directly in doLogin
+    if(event==='SIGNED_IN'&&session?.user&&!ME&&!_appStarted){
       window.history.replaceState({},document.title,window.location.pathname);
       await ensureProfile(session.user);
       await loadMe(session.user.id);
@@ -1418,6 +1487,15 @@ async function showApp(){
   checkNotifStatus();
   checkShowNotifBanner();
   initStatusUI();
+  // Load NP balance and apply owned items
+  sb.from('profiles').select('np,np_items').eq('id',ME.id).single().then(({data})=>{
+    _npBalance=data?.np||0;
+    _npItems=data?.np_items||{};
+    ME.np=_npBalance;ME.np_items=_npItems;
+    applyAllNPItems();
+  });
+  // Daily login bonus
+  setTimeout(checkDailyBonus,3000);
   loadBlocks();
   loadFollowing();
   loadConvos();
@@ -1472,11 +1550,11 @@ async function doLogin(){
   btn.disabled=true;btn.textContent='SIGNING IN…';
   const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
   if(error){showErr(error.message);btn.disabled=false;btn.textContent='SIGN IN →';return;}
-  // Set ME immediately with basic info so showApp() doesn't wait for DB
-  ME={id:data.user.id,username:data.user.email?.split('@')[0]||'user',bio:'',avatar_url:''};
+  // Set basic ME immediately so showApp doesn't wait
+  ME={id:data.user.id,username:data.user.email?.split('@')[0]||'user',bio:'',avatar_url:'',np:0,np_items:{}};
   showApp();
-  // Load full profile in background then refresh status UI
-  loadMe(data.user.id).then(()=>initStatusUI());
+  // Load full profile in background silently
+  loadMe(data.user.id).then(()=>{renderMyAv();initStatusUI();});
 }
 
 async function doSignup(){
@@ -1908,6 +1986,7 @@ function sendVibeBomb(){
   chatChannel.send({type:'broadcast',event:'vibe',payload:{fromName}});
   triggerVibeBomb(fromName);
   showToast('💥 Vibe sent!');
+  earnNP(2,'Vibe Bomb');
 }
 
 function triggerVibeBomb(fromName){
@@ -2176,6 +2255,7 @@ async function sendMsg(){
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
   if(chatChannel)chatChannel.send({type:'broadcast',event:'msg',payload:{...newMsg}});
+  earnNP(1,'Send Message');
   // Send push notification to receiver
   sendPushToUser(currentChat, `@${ME.username||'Someone'}`, text||'📷 Sent an image');
   loadConvos();
@@ -3209,7 +3289,7 @@ async function createPost(){
   const ta=document.getElementById('post-input');const text=ta.value.trim();if(!text)return;
   const{error}=await sb.from('posts').insert({user_id:ME.id,content:text});
   if(error){showToast('❌ '+error.message);return;}
-  ta.value='';showToast('📡 Posted!');loadFeed();
+  ta.value='';showToast('📡 Posted!');earnNP(5,'Post in Feed');loadFeed();
 }
 
 async function likePost(id,btn){
@@ -4051,6 +4131,7 @@ async function uploadAndSendVoice(blob,duration){
   sendPushToUser(currentChat,`@${ME.username||'Someone'}`,`🎙 Sent a voice message`);
   loadConvos();
   showToast('✅ Voice message sent!');
+  earnNP(3,'Voice Message');
 }
 
 function renderVoiceMsg(content,isMine){
@@ -4489,6 +4570,27 @@ function searchGroupMsgs(v){
 
 // -- FLOATING NOTIFICATION --
 let floatNotifSenderId=null,floatNotifTimer=null;
+function playNotifSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    // Two-tone ding sound
+    const play=(freq,start,dur,vol=0.3)=>{
+      const o=ctx.createOscillator();
+      const g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=freq;
+      o.type='sine';
+      g.gain.setValueAtTime(0,ctx.currentTime+start);
+      g.gain.linearRampToValueAtTime(vol,ctx.currentTime+start+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+      o.start(ctx.currentTime+start);
+      o.stop(ctx.currentTime+start+dur);
+    };
+    play(880,0,0.15,0.25);   // high note
+    play(1100,0.12,0.2,0.2); // higher note
+  }catch(e){}
+}
+
 function showFloatNotif(profile,text,senderId){
   floatNotifSenderId=senderId;
   const uname=profile.username||'?';
@@ -4507,6 +4609,7 @@ function showFloatNotif(profile,text,senderId){
   bar.style.animation='fnBar 4s linear forwards';
   const el=document.getElementById('float-notif');
   el.classList.add('on');
+  playNotifSound();
   clearTimeout(floatNotifTimer);
   floatNotifTimer=setTimeout(()=>el.classList.remove('on'),4000);
 }
@@ -4548,12 +4651,13 @@ function setView(id,el){
   document.getElementById('view-groups').style.display=id==='groups'?'flex':'none';
   document.getElementById('view-people').classList.toggle('on',id==='people');
   document.getElementById('view-feed').classList.toggle('on',id==='feed');
-  // Animate the active view in
-  const viewMap={chat:'view-chat',groups:'view-groups',people:'view-people',feed:'view-feed'};
+  document.getElementById('view-store').classList.toggle('on',id==='store');
+  const viewMap={chat:'view-chat',groups:'view-groups',people:'view-people',feed:'view-feed',store:'view-store'};
   const activeView=document.getElementById(viewMap[id]);
   if(activeView){activeView.style.animation='none';requestAnimationFrame(()=>{activeView.style.animation='cardSlideIn .3s ease both';});}
   if(id==='people'){peopleTab='all';switchPeopleTab('all');['all','following','followers','visitors'].forEach(t=>{document.getElementById('ptab-'+t)?.classList.toggle('on',t==='all');});}
   if(id==='feed'){loadFeed();loadAdsterra();}
+  if(id==='store'){initStore();}
   if(id==='groups')loadGroups();
   const map={chat:'bn-chat',groups:'bn-groups',people:'bn-people',feed:'bn-feed'};
   if(map[id])bnActive(map[id]);
@@ -4618,6 +4722,538 @@ document.addEventListener('visibilitychange',()=>{
     if(presenceCh)presenceCh.send({type:'broadcast',event:'heartbeat',payload:{uid:ME.id}});
   }
 });
+
+// ===== NEXUSPOINTS SYSTEM v8.1 =====
+let _npBalance=0;
+let _npItems={};
+let _currentStoreCat=0;
+let _npStreak=0;
+
+const NP_SHOP=[
+  // TRENDING (cat 0)
+  {id:'glow_up_frame',name:'Glow Up Frame',desc:'Trending! Animated rainbow frame around your avatar',price:700,cat:0,tag:'trending',preview:'rainbow-border'},
+  {id:'coachella_theme',name:'Coachella Theme',desc:'Festival vibes — warm desert sunset colors',price:800,cat:0,tag:'weekly'},
+  {id:'euphoria_bubble',name:'Euphoria Bubble',desc:'Glitter purple chat bubbles inspired by the show',price:600,cat:0,tag:'trending'},
+  {id:'freeze_frame_badge',name:'⏸ Freeze Badge',desc:'Based on viral freeze-frame trend',price:400,cat:0,tag:'new'},
+
+  // BUBBLES (cat 1)
+  {id:'bubble_pink',name:'Pink Bubbles',desc:'Soft pink chat bubbles',price:300,cat:1,preview:'bubble-pink'},
+  {id:'bubble_purple',name:'Purple Bubbles',desc:'Deep purple chat bubbles',price:300,cat:1,preview:'bubble-purple'},
+  {id:'bubble_gold',name:'Gold Bubbles',desc:'Luxurious gold chat bubbles',price:500,cat:1,preview:'bubble-gold'},
+  {id:'bubble_rainbow',name:'Rainbow Bubbles',desc:'Animated rainbow gradient bubbles',price:800,cat:1,preview:'bubble-rainbow'},
+  {id:'bubble_neon',name:'Neon Green',desc:'Electric neon green bubbles',price:400,cat:1,preview:'bubble-neon'},
+  {id:'bubble_galaxy',name:'Galaxy Bubbles',desc:'Deep space galaxy effect',price:1000,cat:1,preview:'bubble-galaxy'},
+
+  // USERNAME (cat 2)
+  {id:'username_red',name:'Red Username',desc:'Fiery red @username color',price:200,cat:2},
+  {id:'username_gold',name:'Gold Username',desc:'Golden @username color',price:400,cat:2},
+  {id:'username_cyan',name:'Cyan Username',desc:'Electric cyan @username',price:200,cat:2},
+  {id:'username_rainbow',name:'Rainbow Username',desc:'Animated rainbow username',price:1500,cat:2,tag:'new'},
+  {id:'username_pink',name:'Pink Username',desc:'Hot pink @username',price:200,cat:2},
+
+  // BORDERS (cat 3)
+  {id:'border_cyan',name:'Cyan Glow Border',desc:'Glowing cyan profile border',price:500,cat:3},
+  {id:'border_fire',name:'Fire Border',desc:'Animated flame profile border',price:1000,cat:3,tag:'trending'},
+  {id:'border_rainbow',name:'Rainbow Border',desc:'Animated rainbow border',price:1500,cat:3},
+  {id:'border_diamond',name:'Diamond Border',desc:'Sparkling diamond border',price:2000,cat:3},
+  {id:'border_pulse',name:'Pulse Border',desc:'Heartbeat pulse animation',price:800,cat:3},
+
+  // BADGES (cat 4)
+  {id:'badge_lightning',name:'⚡ Lightning',desc:'Lightning strike badge',price:300,cat:4},
+  {id:'badge_diamond',name:'💎 Diamond',desc:'Diamond status badge',price:1000,cat:4},
+  {id:'badge_star',name:'🌟 Star',desc:'Star badge next to name',price:500,cat:4},
+  {id:'badge_crown',name:'👑 Crown',desc:'Royal crown badge',price:2000,cat:4,tag:'trending'},
+  {id:'badge_fire',name:'🔥 Fire',desc:'Fire badge',price:400,cat:4},
+  {id:'badge_rocket',name:'🚀 Rocket',desc:'Rocket badge',price:600,cat:4},
+  {id:'badge_verified',name:'✅ Verified',desc:'Verified checkmark',price:3000,cat:4,tag:'new'},
+
+  // THEMES (cat 5)
+  {id:'theme_ocean',name:'🌊 Ocean',desc:'Deep navy & teal — calm ocean vibes',price:700,cat:5,tag:'weekly'},
+  {id:'theme_fire',name:'🔥 Fire',desc:'Dark red & ember orange — intense',price:700,cat:5},
+  {id:'theme_midnight',name:'🌙 Midnight',desc:'Pure black & soft purple',price:700,cat:5},
+  {id:'theme_forest',name:'🌿 Forest',desc:'Dark green & emerald tones',price:700,cat:5},
+  {id:'theme_sunset',name:'🌅 Sunset',desc:'Warm orange & pink gradient',price:800,cat:5,tag:'trending'},
+  {id:'theme_ice',name:'❄️ Ice',desc:'Crisp white & ice blue',price:700,cat:5},
+
+  // SPECIAL (cat 6)
+  {id:'special_invisible',name:'🫥 Invisible Ink',desc:'Send blurred messages — tap to reveal',price:300,cat:6,tag:'new'},
+  {id:'special_ghost',name:'👻 Ghost Mode',desc:'Read messages without showing read receipt',price:800,cat:6},
+  {id:'special_extra_vibes',name:'💥 Vibe Pack',desc:'Extra rare vibe bomb emojis',price:500,cat:6},
+  {id:'special_double_xp',name:'⚡ Double NP (7d)',desc:'Earn 2x NP for 7 days',price:1000,cat:6,tag:'new'},
+];
+
+const BUBBLE_PREVIEWS={
+  'bubble-pink':'linear-gradient(135deg,#ff6b9d,#ff2d6b)',
+  'bubble-purple':'linear-gradient(135deg,#7c3aff,#b54dff)',
+  'bubble-gold':'linear-gradient(135deg,#c47800,#ffd700)',
+  'bubble-rainbow':'linear-gradient(135deg,#ff2d78,#ff9500,#00e5ff,#7c3aff)',
+  'bubble-neon':'linear-gradient(135deg,#00ff88,#00cc44)',
+  'bubble-galaxy':'linear-gradient(135deg,#0a0020,#7c3aff,#ff2d78)',
+  'rainbow-border':'conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78)',
+};
+
+function getBubbleStyle(previewKey){
+  return BUBBLE_PREVIEWS[previewKey]||'var(--card2)';
+}
+
+function renderStorePreview(item){
+  if(item.preview?.startsWith('bubble')||item.preview==='rainbow-border'){
+    const bg=getBubbleStyle(item.preview);
+    if(item.preview==='rainbow-border'){
+      return`<div style="width:60px;height:60px;border-radius:50%;background:${bg};padding:3px;display:flex;align-items:center;justify-content:center"><div style="width:100%;height:100%;border-radius:50%;background:var(--bg3)"></div></div>`;
+    }
+    return`<div style="border-radius:14px;padding:8px 14px;background:${bg};font-size:12px;color:#fff;font-weight:600;max-width:90%">hey wassup! 👋</div>`;
+  }
+  if(item.id.startsWith('username_')){
+    const colors={username_red:'#ff3864',username_gold:'#ffd700',username_cyan:'#00e5ff',username_rainbow:'linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff)',username_pink:'#ff69b4'};
+    const c=colors[item.id]||'var(--cyan)';
+    return`<div style="font-size:14px;font-weight:700;font-family:var(--mono);background:${c.includes('gradient')?c:'none'};-webkit-background-clip:${c.includes('gradient')?'text':'unset'};-webkit-text-fill-color:${c.includes('gradient')?'transparent':'unset'};color:${c.includes('gradient')?'transparent':c}">@YourName</div>`;
+  }
+  if(item.id.startsWith('border_')){
+    const bcolors={border_cyan:'0 0 0 3px rgba(0,229,255,.6)',border_fire:'0 0 0 3px #ff6b00, 0 0 16px #ff3800',border_rainbow:'none',border_diamond:'0 0 0 3px #b9f2ff, 0 0 12px #7df9ff',border_pulse:'0 0 0 3px rgba(0,229,255,.4)'};
+    return`<div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:${bcolors[item.id]||'0 0 0 3px var(--cyan)'}">👤</div>`;
+  }
+  if(item.id.startsWith('badge_')){
+    const emojis={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅'};
+    return`<div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700"><span style="color:var(--cyan)">@You</span><span style="font-size:20px">${emojis[item.id]||'🏅'}</span></div>`;
+  }
+  if(item.id.startsWith('theme_')){
+    const themes={
+      theme_ocean:{bg:'#020b18',accent:'#00d4ff'},
+      theme_fire:{bg:'#0a0000',accent:'#ff3800'},
+      theme_midnight:{bg:'#000005',accent:'#9d4edd'},
+      theme_forest:{bg:'#001a00',accent:'#00c853'},
+      theme_sunset:{bg:'#0a0300',accent:'#ff6b00'},
+      theme_ice:{bg:'#f0f8ff',accent:'#0099cc'},
+    };
+    const t=themes[item.id]||{bg:'#0a0a12',accent:'#00e5ff'};
+    return`<div style="width:100%;height:100%;background:${t.bg};border-radius:8px;display:flex;flex-direction:column;gap:4px;padding:8px;box-sizing:border-box">
+      <div style="height:6px;border-radius:3px;background:${t.accent};opacity:.6;width:70%"></div>
+      <div style="height:6px;border-radius:3px;background:${t.accent};opacity:.4;width:90%"></div>
+      <div style="height:6px;border-radius:3px;background:${t.accent};opacity:.8;width:50%"></div>
+    </div>`;
+  }
+  if(item.id==='special_invisible'){
+    return`<div style="border-radius:14px;padding:8px 14px;background:var(--card2);font-size:12px;color:transparent;text-shadow:0 0 8px var(--cyan);backdrop-filter:blur(4px);filter:blur(4px);max-width:90%">secret message here</div>`;
+  }
+  // Default
+  return`<div style="font-size:32px">${item.name.split(' ')[0]}</div>`;
+}
+
+function getEquipped(itemId){
+  if(itemId.startsWith('bubble_')||itemId==='euphoria_bubble') return localStorage.getItem('nexus_active_bubble')===itemId;
+  if(itemId.startsWith('theme_')||itemId==='coachella_theme') return localStorage.getItem('nexus_active_theme')===itemId;
+  if(itemId.startsWith('border_')||itemId==='glow_up_frame') return localStorage.getItem('nexus_active_border')===itemId;
+  if(itemId.startsWith('badge_')||itemId==='freeze_frame_badge') return localStorage.getItem('nexus_active_badge')===itemId;
+  if(itemId.startsWith('username_')) return localStorage.getItem('nexus_active_username')===itemId;
+  return false;
+}
+
+function renderStoreCard(item){
+  const owned=_npItems[item.id];
+  const canBuy=_npBalance>=item.price&&!owned;
+  const equipped=owned&&getEquipped(item.id);
+  const tagClass=item.tag==='trending'?'trending':item.tag==='new'?'new':item.tag==='weekly'?'weekly':'';
+  let btn='';
+  if(owned){
+    if(equipped) btn=`<button class="store-buy-btn" style="background:rgba(255,45,120,.12);color:var(--pink);border:1px solid rgba(255,45,120,.25);width:100%;padding:8px;border-radius:var(--r8);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)" onclick="unequipItem('${item.id}')">✕ Remove</button>`;
+    else btn=`<button class="store-buy-btn can-buy" onclick="equipItem('${item.id}')">▶ Equip</button>`;
+  }else if(canBuy){
+    btn=`<button class="store-buy-btn can-buy" onclick="buyItem('${item.id}')">Buy · ${item.price.toLocaleString()} NP</button>`;
+  }else{
+    btn=`<button class="store-buy-btn no-np">Need ${item.price.toLocaleString()} NP</button>`;
+  }
+  return`<div class="store-card ${tagClass} ${owned?'owned':''}" style="${equipped?'border-color:rgba(0,255,136,.4);box-shadow:0 0 12px rgba(0,255,136,.1)':''}">
+    <div class="store-preview">${renderStorePreview(item)}</div>
+    <div class="store-item-name">${item.name}${equipped?' <span style="font-size:9px;color:var(--green);font-family:var(--mono);font-weight:700">● ACTIVE</span>':''}</div>
+    <div class="store-item-desc">${item.desc}</div>
+    <div class="store-price">💎 ${item.price.toLocaleString()} NP</div>
+    ${btn}
+  </div>`;
+}
+
+function filterStore(cat){
+  _currentStoreCat=cat;
+  document.querySelectorAll('.store-cat-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.cat)===cat));
+  const items=cat===0?NP_SHOP.filter(i=>i.tag==='trending'||i.tag==='weekly'||i.tag==='new'):NP_SHOP.filter(i=>i.cat===cat);
+  document.getElementById('store-grid').innerHTML=items.map(renderStoreCard).join('');
+}
+
+async function initStore(){
+  // Populate earn NP row
+  const earnRow=document.getElementById('np-earn-row');
+  if(earnRow&&!earnRow.hasChildNodes()){
+    const earns=[['📅','Daily Login','+10'],['💬','Message','+1'],['📝','Post','+5'],['❤️','Get Like','+2'],['🎙','Voice Msg','+3'],['💥','Vibe Bomb','+2'],['📖','7d Streak','+50']];
+    earnRow.innerHTML=earns.map(([e,l,n])=>`<div style="flex-shrink:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r12);padding:10px 12px;text-align:center;min-width:82px"><div style="font-size:20px">${e}</div><div style="font-size:10px;color:var(--t3);margin:3px 0;line-height:1.2">${l}</div><div style="font-size:11px;font-weight:700;color:var(--cyan);font-family:var(--mono)">${n} NP</div></div>`).join('');
+  }
+  // Populate category buttons
+  const cats=document.getElementById('store-cats');
+  if(cats&&!cats.hasChildNodes()){
+    const labels=['🔥 Trending','🫧 Bubbles','✨ Username','🔲 Borders','🏅 Badges','🎨 Themes','🎮 Special'];
+    cats.innerHTML=labels.map((c,i)=>`<button onclick="filterStore(${i})" class="store-cat-btn${i===0?' active':''}" data-cat="${i}">${c}</button>`).join('');
+  }
+  // Load NP balance and owned items from profile
+  const{data}=await sb.from('profiles').select('np,np_items').eq('id',ME.id).single();
+  _npBalance=data?.np||0;
+  _npItems=data?.np_items||{};
+  document.getElementById('np-balance-display').textContent=_npBalance.toLocaleString()+' NP';
+  filterStore(_currentStoreCat);
+}
+
+async function buyItem(itemId){
+  const item=NP_SHOP.find(i=>i.id===itemId);
+  if(!item)return;
+  if(_npBalance<item.price){showToast(`Need ${item.price} NP!`);return;}
+  // Deduct NP and save item
+  _npBalance-=item.price;
+  _npItems[itemId]=true;
+  const{error}=await sb.from('profiles').update({np:_npBalance,np_items:_npItems}).eq('id',ME.id);
+  if(error){showToast('❌ Purchase failed');_npBalance+=item.price;delete _npItems[itemId];return;}
+  ME.np=_npBalance;ME.np_items=_npItems;
+  document.getElementById('np-balance-display').textContent=_npBalance.toLocaleString()+' NP';
+  showToast(`🎉 ${item.name} unlocked!`);
+  // Apply item immediately
+  applyNPItem(itemId);
+  filterStore(_currentStoreCat);
+}
+
+function equipItem(itemId){
+  applyNPItem(itemId);
+  filterStore(_currentStoreCat);
+}
+
+function unequipItem(itemId){
+  const r=document.documentElement.style;
+  if(itemId.startsWith('bubble_')||itemId==='euphoria_bubble'){
+    localStorage.removeItem('nexus_active_bubble');
+    r.setProperty('--my-bubble-bg','linear-gradient(135deg,rgba(0,100,255,.2),rgba(124,58,255,.2))');
+    showToast('🫧 Bubble color reset');
+  }
+  else if(itemId.startsWith('theme_')||itemId==='coachella_theme'){
+    localStorage.removeItem('nexus_active_theme');
+    // Reset to default theme vars
+    r.setProperty('--bg','#04050f');r.setProperty('--bg2','#06080f');r.setProperty('--bg3','#090b18');
+    r.setProperty('--card','#0d1020');r.setProperty('--card2','#111428');
+    r.setProperty('--cyan','#00e5ff');r.setProperty('--purple','#7c3aff');
+    showToast('🎨 Theme reset to default');
+  }
+  else if(itemId.startsWith('border_')||itemId==='glow_up_frame'){
+    localStorage.removeItem('nexus_active_border');
+    document.querySelectorAll('.my-av').forEach(el=>{el.style.boxShadow='';el.style.outline='';el.style.background='';el.style.padding='';});
+    showToast('🔲 Border removed');
+  }
+  else if(itemId.startsWith('badge_')||itemId==='freeze_frame_badge'){
+    localStorage.removeItem('nexus_active_badge');
+    document.querySelectorAll('.np-badge-el').forEach(el=>el.remove());
+    showToast('🏅 Badge removed');
+  }
+  else if(itemId.startsWith('username_')){
+    localStorage.removeItem('nexus_active_username');
+    document.querySelectorAll('.post-name,.ci-name,.msg-sender').forEach(el=>{
+      el.style.color='';el.style.background='';el.style.webkitBackgroundClip='';el.style.webkitTextFillColor='';
+    });
+    showToast('✨ Username color reset');
+  }
+  else if(itemId==='special_ghost'){window._ghostMode=false;showToast('👻 Ghost mode off');}
+  else if(itemId==='special_double_xp'){window._doubleNP=false;showToast('⚡ Double NP removed');}
+  filterStore(_currentStoreCat);
+}
+
+function applyNPItem(itemId){
+  if(!_npItems[itemId])return;
+  const r=document.documentElement.style;
+
+  // === BUBBLE COLORS ===
+  const bubbles={
+    bubble_pink:'linear-gradient(135deg,rgba(255,107,157,.5),rgba(255,45,107,.45))',
+    bubble_purple:'linear-gradient(135deg,rgba(124,58,255,.5),rgba(181,77,255,.45))',
+    bubble_gold:'linear-gradient(135deg,rgba(196,120,0,.5),rgba(255,215,0,.45))',
+    bubble_rainbow:'linear-gradient(135deg,rgba(255,45,120,.4),rgba(255,149,0,.4),rgba(0,229,255,.4),rgba(124,58,255,.4))',
+    bubble_neon:'linear-gradient(135deg,rgba(0,255,136,.45),rgba(0,204,68,.4))',
+    bubble_galaxy:'linear-gradient(135deg,rgba(10,0,32,.95),rgba(124,58,255,.5),rgba(255,45,120,.4))',
+    euphoria_bubble:'linear-gradient(135deg,rgba(124,58,255,.55),rgba(181,77,255,.5))',
+  };
+  if(bubbles[itemId]){
+    // Unequip previous bubble
+    const prev=localStorage.getItem('nexus_active_bubble');
+    if(prev&&prev!==itemId)localStorage.removeItem('nexus_active_bubble');
+    localStorage.setItem('nexus_active_bubble',itemId);
+    r.setProperty('--my-bubble-bg',bubbles[itemId]);
+    showToast('🫧 Bubble color equipped!');return;
+  }
+
+  // === USERNAME COLORS ===
+  const uColors={username_red:'#ff3864',username_gold:'#ffd700',username_cyan:'#00e5ff',username_pink:'#ff69b4'};
+  if(uColors[itemId]){
+    localStorage.setItem('nexus_active_username',itemId);
+    document.querySelectorAll('.post-name,.ci-name,.msg-sender').forEach(el=>{el.style.color=uColors[itemId];el.style.webkitTextFillColor='';});
+    showToast('✨ Username color equipped!');return;
+  }
+  if(itemId==='username_rainbow'){
+    localStorage.setItem('nexus_active_username',itemId);
+    document.querySelectorAll('.post-name,.ci-name,.msg-sender').forEach(el=>{
+      el.style.background='linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff)';
+      el.style.webkitBackgroundClip='text';el.style.webkitTextFillColor='transparent';
+    });
+    showToast('✨ Rainbow username equipped!');return;
+  }
+
+  // === PROFILE BORDERS ===
+  const bShadows={
+    border_cyan:'0 0 0 3px rgba(0,229,255,.8),0 0 16px rgba(0,229,255,.4)',
+    border_fire:'0 0 0 3px #ff6b00,0 0 20px #ff3800',
+    border_diamond:'0 0 0 3px #b9f2ff,0 0 20px #7df9ff',
+    border_pulse:'0 0 0 3px rgba(0,229,255,.6)',
+  };
+  if(bShadows[itemId]){
+    localStorage.setItem('nexus_active_border',itemId);
+    document.querySelectorAll('.my-av').forEach(el=>{el.style.boxShadow=bShadows[itemId];el.style.background='';el.style.padding='';});
+    showToast('🔲 Border equipped!');return;
+  }
+  if(itemId==='border_rainbow'||itemId==='glow_up_frame'){
+    localStorage.setItem('nexus_active_border',itemId);
+    document.querySelectorAll('.my-av').forEach(el=>{
+      el.style.padding='2px';
+      el.style.background='conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78)';
+      el.style.boxShadow='0 0 20px rgba(255,100,200,.4)';
+    });
+    showToast('🌈 Rainbow border equipped!');return;
+  }
+
+  // === BADGES ===
+  const badges={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅',freeze_frame_badge:'⏸'};
+  if(badges[itemId]){
+    // Remove old badge first
+    document.querySelectorAll('.np-badge-el').forEach(el=>el.remove());
+    localStorage.setItem('nexus_active_badge',itemId);
+    // Add to top-right avatar area
+    const myAv=document.getElementById('top-av-wrap')||document.querySelector('.my-av')?.parentElement;
+    if(myAv){
+      const b=document.createElement('span');b.className='np-badge-el';b.textContent=badges[itemId];
+      b.style.cssText='position:absolute;top:-4px;right:-4px;font-size:14px;z-index:10;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))';
+      if(myAv.style.position!=='relative')myAv.style.position='relative';
+      myAv.appendChild(b);
+    }
+    showToast(`${badges[itemId]} Badge equipped! Shows on your profile`);return;
+  }
+
+  // === THEMES ===
+  const themes={
+    theme_ocean:{bg:'#020b18',bg2:'#030e20',bg3:'#060f20',card:'#0a1e2e',card2:'#0c2035',cyan:'#00d4ff',purple:'#0066cc'},
+    theme_fire:{bg:'#0a0000',bg2:'#120200',bg3:'#160200',card:'#1a0500',card2:'#200800',cyan:'#ff6b00',purple:'#cc2200'},
+    theme_midnight:{bg:'#000008',bg2:'#080010',bg3:'#0a0015',card:'#100020',card2:'#150028',cyan:'#9d4edd',purple:'#6a0dad'},
+    theme_forest:{bg:'#001800',bg2:'#002000',bg3:'#002500',card:'#003000',card2:'#003800',cyan:'#00c853',purple:'#00882a'},
+    theme_sunset:{bg:'#0a0300',bg2:'#120500',bg3:'#160600',card:'#1a0800',card2:'#200a00',cyan:'#ff8c00',purple:'#cc4400'},
+    theme_ice:{bg:'#e8f4ff',bg2:'#d0e8ff',bg3:'#c0dcff',card:'#ffffff',card2:'#f0f8ff',cyan:'#0099cc',purple:'#006699'},
+    coachella_theme:{bg:'#0a0500',bg2:'#120800',bg3:'#160a00',card:'#1e1000',card2:'#251500',cyan:'#ffa500',purple:'#cc6600'},
+  };
+  if(themes[itemId]){
+    localStorage.setItem('nexus_active_theme',itemId);
+    const t=themes[itemId];
+    r.setProperty('--bg',t.bg);r.setProperty('--bg2',t.bg2);r.setProperty('--bg3',t.bg3);
+    r.setProperty('--card',t.card);r.setProperty('--card2',t.card2);
+    r.setProperty('--cyan',t.cyan);r.setProperty('--purple',t.purple);
+    showToast('🎨 Theme applied!');return;
+  }
+
+  // === SPECIAL ===
+  if(itemId==='special_invisible'){window._invisibleInk=true;showToast('🫥 Invisible Ink unlocked!');}
+  if(itemId==='special_ghost'){window._ghostMode=true;showToast('👻 Ghost Mode on!');}
+  if(itemId==='special_double_xp'){window._doubleNP=true;window._doubleNPExpiry=Date.now()+7*24*60*60*1000;showToast('⚡ Double NP for 7 days!');}
+  if(itemId==='special_extra_vibes'){window._extraVibes=true;showToast('💥 Rare vibe emojis unlocked!');}
+}
+
+function applyAllNPItems(){
+  // Re-apply all owned items that were previously equipped (saved in localStorage)
+  const activeBubble=localStorage.getItem('nexus_active_bubble');
+  const activeTheme=localStorage.getItem('nexus_active_theme');
+  const activeBorder=localStorage.getItem('nexus_active_border');
+  const activeBadge=localStorage.getItem('nexus_active_badge');
+  const activeUsername=localStorage.getItem('nexus_active_username');
+  if(activeBubble&&_npItems[activeBubble])applyNPItem(activeBubble);
+  if(activeTheme&&_npItems[activeTheme])applyNPItem(activeTheme);
+  if(activeBorder&&_npItems[activeBorder])applyNPItem(activeBorder);
+  if(activeBadge&&_npItems[activeBadge])applyNPItem(activeBadge);
+  if(activeUsername&&_npItems[activeUsername])applyNPItem(activeUsername);
+  // Always apply special unlocks
+  if(_npItems['special_ghost'])window._ghostMode=true;
+  if(_npItems['special_invisible'])window._invisibleInk=true;
+  if(_npItems['special_double_xp']&&Date.now()<(window._doubleNPExpiry||0))window._doubleNP=true;
+  if(_npItems['special_extra_vibes'])window._extraVibes=true;
+}
+
+
+  // === USERNAME COLORS ===
+  const usernameColors={
+    username_red:'#ff3864',
+    username_gold:'#ffd700',
+    username_cyan:'#00e5ff',
+    username_pink:'#ff69b4',
+  };
+  if(usernameColors[itemId]){
+    r.setProperty('--username-color',usernameColors[itemId]);
+    // Apply to all @username elements
+    document.querySelectorAll('.post-name,.ci-name,.msg-sender').forEach(el=>{
+      el.style.color=usernameColors[itemId];
+    });
+    return;
+  }
+  if(itemId==='username_rainbow'){
+    r.setProperty('--username-color','linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff)');
+    document.querySelectorAll('.post-name,.ci-name,.msg-sender').forEach(el=>{
+      el.style.background='linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff)';
+      el.style.webkitBackgroundClip='text';
+      el.style.webkitTextFillColor='transparent';
+    });
+    return;
+  }
+
+  // === PROFILE BORDERS ===
+  const borders={
+    border_cyan:'0 0 0 3px rgba(0,229,255,.7), 0 0 12px rgba(0,229,255,.3)',
+    border_fire:'0 0 0 3px #ff6b00, 0 0 20px #ff3800',
+    border_rainbow:'0 0 0 3px transparent',
+    border_diamond:'0 0 0 3px #b9f2ff, 0 0 16px #7df9ff',
+    border_pulse:'0 0 0 3px rgba(0,229,255,.5)',
+    glow_up_frame:'0 0 0 3px transparent',
+  };
+  if(borders[itemId]){
+    r.setProperty('--my-avatar-shadow',borders[itemId]);
+    document.querySelectorAll('.my-av').forEach(el=>el.style.boxShadow=borders[itemId]);
+    if(itemId==='border_rainbow'||itemId==='glow_up_frame'){
+      document.querySelectorAll('.my-av').forEach(el=>{
+        el.style.outline='3px solid transparent';
+        el.style.background='conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78)';
+        el.style.padding='2px';
+      });
+    }
+    return;
+  }
+
+  // === BADGES — show next to username in chat header & profile ===
+  const badges={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅',freeze_frame_badge:'⏸'};
+  if(badges[itemId]){
+    r.setProperty('--my-badge',badges[itemId]);
+    // Add badge to my name displays
+    document.querySelectorAll('.my-name-display').forEach(el=>{
+      if(!el.querySelector('.np-badge-el')){
+        const b=document.createElement('span');
+        b.className='np-badge-el';b.textContent=badges[itemId];
+        b.style.cssText='font-size:14px;margin-left:4px';
+        el.appendChild(b);
+      }
+    });
+    showToast(`${badges[itemId]} Badge equipped! Shows next to your name`);
+    return;
+  }
+
+  // === THEMES ===
+  const themes={
+    theme_ocean:{bg:'#020b18',bg2:'#030e20',bg3:'#060f20',card:'#0a1e2e',card2:'#0c2035',cyan:'#00d4ff',purple:'#0066cc'},
+    theme_fire:{bg:'#0a0000',bg2:'#120200',bg3:'#160200',card:'#1a0500',card2:'#200800',cyan:'#ff6b00',purple:'#cc2200'},
+    theme_midnight:{bg:'#000008',bg2:'#080010',bg3:'#0a0015',card:'#100020',card2:'#150028',cyan:'#9d4edd',purple:'#6a0dad'},
+    theme_forest:{bg:'#001800',bg2:'#002000',bg3:'#002500',card:'#003000',card2:'#003800',cyan:'#00c853',purple:'#00882a'},
+    theme_sunset:{bg:'#0a0300',bg2:'#120500',bg3:'#160600',card:'#1a0800',card2:'#200a00',cyan:'#ff8c00',purple:'#cc4400'},
+    theme_ice:{bg:'#e8f4ff',bg2:'#d0e8ff',bg3:'#c0dcff',card:'#ffffff',card2:'#f0f8ff',cyan:'#0099cc',purple:'#006699'},
+    coachella_theme:{bg:'#0a0500',bg2:'#120800',bg3:'#160a00',card:'#1e1000',card2:'#251500',cyan:'#ffa500',purple:'#cc6600'},
+  };
+  if(themes[itemId]){
+    const t=themes[itemId];
+    r.setProperty('--bg',t.bg);r.setProperty('--bg2',t.bg2);r.setProperty('--bg3',t.bg3);
+    r.setProperty('--card',t.card);r.setProperty('--card2',t.card2);
+    r.setProperty('--cyan',t.cyan);r.setProperty('--purple',t.purple);
+    showToast('🎨 Theme applied!');
+    return;
+  }
+
+  // === SPECIAL ITEMS ===
+  if(itemId==='special_invisible'){
+    window._invisibleInk=true;
+    showToast('🫥 Invisible Ink unlocked! Hold Send to use');
+    return;
+  }
+  if(itemId==='special_ghost'){
+    window._ghostMode=true;
+    showToast('👻 Ghost Mode on — reading without receipts');
+    return;
+  }
+  if(itemId==='special_double_xp'){
+    window._doubleNP=true;
+    window._doubleNPExpiry=Date.now()+7*24*60*60*1000;
+    showToast('⚡ Double NP active for 7 days!');
+    return;
+  }
+  if(itemId==='special_extra_vibes'){
+    window._extraVibes=true;
+    showToast('💥 Rare vibe emojis unlocked!');
+    return;
+  }
+
+// Earn NP — call this on actions
+async function earnNP(amount,reason){
+  if(!ME?.id||amount<=0)return;
+  // Double NP if active and not expired
+  if(window._doubleNP){
+    if(window._doubleNPExpiry&&Date.now()<window._doubleNPExpiry) amount*=2;
+    else window._doubleNP=false;
+  }
+  _npBalance+=amount;
+  ME.np=_npBalance;
+  await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
+  const badge=document.getElementById('np-balance-display');
+  if(badge)badge.textContent=_npBalance.toLocaleString()+' NP';
+  const pop=document.createElement('div');
+  pop.className='np-earn-pop';
+  pop.textContent=`+${amount} NP`;
+  pop.style.cssText+=`;left:${10+Math.random()*30}%;bottom:80px`;
+  document.body.appendChild(pop);
+  setTimeout(()=>pop.remove(),1500);
+}
+
+// Daily login bonus
+async function checkDailyBonus(){
+  const last=localStorage.getItem('np_last_login');
+  const today=new Date().toDateString();
+  if(last===today)return;
+  localStorage.setItem('np_last_login',today);
+  // Check streak
+  const yesterday=new Date(Date.now()-86400000).toDateString();
+  if(last===yesterday){
+    _npStreak++;
+    localStorage.setItem('np_streak',String(_npStreak));
+    if(_npStreak>=7){await earnNP(50,'Streak Bonus');showToast('🔥 7-day streak! +50 NP bonus!');}
+  }else{
+    _npStreak=1;
+    localStorage.setItem('np_streak','1');
+  }
+  await earnNP(10,'Daily Login');
+  showToast(`📅 Daily login! +10 NP (streak: ${_npStreak} days)`);
+}
+
+function resetAllItems(){
+  const r=document.documentElement.style;
+  // Reset bubble
+  localStorage.removeItem('nexus_active_bubble');
+  r.setProperty('--my-bubble-bg','linear-gradient(135deg,rgba(0,100,255,.2),rgba(124,58,255,.2))');
+  // Reset theme
+  localStorage.removeItem('nexus_active_theme');
+  r.setProperty('--bg','#04050f');r.setProperty('--bg2','#06080f');r.setProperty('--bg3','#090b18');
+  r.setProperty('--card','#0d1020');r.setProperty('--card2','#111428');
+  r.setProperty('--cyan','#00e5ff');r.setProperty('--purple','#7c3aff');
+  // Reset border
+  localStorage.removeItem('nexus_active_border');
+  document.querySelectorAll('.my-av').forEach(el=>{el.style.boxShadow='';el.style.outline='';el.style.background='';el.style.padding='';});
+  // Reset badge
+  localStorage.removeItem('nexus_active_badge');
+  document.querySelectorAll('.np-badge-el').forEach(el=>el.remove());
+  // Reset username color
+  localStorage.removeItem('nexus_active_username');
+  document.querySelectorAll('.post-name,.ci-name,.msg-sender').forEach(el=>{
+    el.style.color='';el.style.background='';el.style.webkitBackgroundClip='';el.style.webkitTextFillColor='';
+  });
+  showToast('↺ All customizations reset to default');
+  filterStore(_currentStoreCat);
+}
 
 // close dropdowns on click outside
 document.addEventListener('click',e=>{
@@ -4704,8 +5340,8 @@ function dismissPWABanner(){
 
 // Also add install option in profile/settings menu
 function checkPWAInstalled(){
-  return window.matchMedia('(display-mode: standalone)').matches||
-         window.navigator.standalone===true;
+  return (window.matchMedia('(display-mode: standalone)').matches||
+         window.navigator.standalone===true);
 }
 let deferredInstallPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{
