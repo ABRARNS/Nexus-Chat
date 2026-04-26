@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
-<title>NEXUS-CHAT v8.1 — Real Social Network</title>
+<title>NEXUS-CHAT — Real Social Network</title>
 
 <!-- SEO -->
 <meta name="description" content="NEXUS is a real-time social network — DMs, group chats, 24-hour stories, a public feed, and more. Built for people who want a fast, minimal, distraction-free social experience.">
@@ -2158,6 +2158,7 @@ function makeBubble(msg,isFirst,groupMode,membersList){
   const uname=p?.username||'?';
   const avUrl=p?.avatar_url||'';
   const col=uc(uname);
+  const{nameStyle,badgeEmoji,avatarStyle}=getNPStyles(p?.np_items);
   const t=fmtTime(msg.created_at);
   const hasImg=msg.media_type==='image'&&msg.media_url;
   const isFwd=(msg.content||'').startsWith('↪ ');
@@ -2171,6 +2172,8 @@ function makeBubble(msg,isFirst,groupMode,membersList){
   const ticks=(!groupMode&&isMe)?`<span class="msg-tick ${msg.read_at?'read':''}" title="${msg.read_at?'Seen at '+readTime:''}">${msg.read_at?'✓✓ Seen':'✓✓'}</span>`:'';
   const roleInfo=groupMode&&!isMe&&(groupMembersCache[msg.sender_id]?.role)?(groupMembersCache[msg.sender_id].role):'';
   const roleBadge=roleInfo&&roleInfo!=='member'?`<span class="role-badge ${roleInfo}">${roleInfo}</span>`:'';
+  const avWrapStyle=avatarStyle?`style="${avatarStyle}"`:'';
+  const senderLabel=`<span style="${nameStyle}">@${uname}${badgeEmoji?` <span style="font-size:11px">${badgeEmoji}</span>`:''}</span>${roleBadge?` ${roleBadge}`:''}`;
 
   const div=document.createElement('div');
   div.className=`msg-row ${isMe?'me':''} ${isFirst?'first':'stack'}`;
@@ -2180,9 +2183,9 @@ function makeBubble(msg,isFirst,groupMode,membersList){
   const canDelete=isMe||(groupMode&&isAdmin);
 
   div.innerHTML=`
-    ${isFirst?`<div class="msg-av ${isMe?'hide':''}">${avHtml}</div>`:`<div class="msg-av hide"></div>`}
+    ${isFirst?`<div class="msg-av ${isMe?'hide':''}" ${avWrapStyle}>${avHtml}</div>`:`<div class="msg-av hide"></div>`}
     <div class="msg-col">
-      ${isFirst&&!isMe?`<div class="msg-sender" style="color:${col.includes('gradient')?'var(--cyan)':col}">@${uname} ${roleBadge}</div>`:''}
+      ${isFirst&&!isMe?`<div class="msg-sender">${senderLabel}</div>`:''}
       ${isDisappearing?`<div class="disappear-badge">⏱ disappearing</div>`:''}
       ${isFwd?`<div class="fwd-label">↪ forwarded</div>`:''}
       <div class="bubble ${isMe?'me':'them'} ${hasImg?'img-only':''}" id="bub-${msg.id}"
@@ -3219,7 +3222,7 @@ async function viewProfile(uid){
 let allPosts=[];
 async function loadFeed(){
   const[{data:posts},{data:likes},{data:commentCounts}]=await Promise.all([
-    sb.from('posts').select('*,profiles(username,avatar_url)').order('created_at',{ascending:false}).limit(50),
+    sb.from('posts').select('*,profiles(username,avatar_url,np_items)').order('created_at',{ascending:false}).limit(50),
     sb.from('post_likes').select('post_id').eq('user_id',ME.id),
     sb.from('post_comments').select('post_id')
   ]);
@@ -3235,10 +3238,11 @@ function renderFeed(posts){
   if(!posts.length){el.innerHTML='<div style="color:var(--t4);font-family:var(--mono);font-size:13px;padding:10px 0">No posts yet!</div>';return;}
   el.innerHTML=posts.map(post=>{
     const pf=post.profiles||{},uname=pf.username||'?',liked=myLikedPosts.has(post.id);
+    const{nameStyle,badgeEmoji,avatarStyle}=getNPStyles(pf.np_items);
     return`<div class="post-card" data-post-id="${post.id}">
       <div class="post-head">
-        <div class="post-av" style="background:${uc(uname)}">${pf.avatar_url?`<img src="${pf.avatar_url}">`:`<span>${uname[0].toUpperCase()}</span>`}</div>
-        <div style="flex:1;min-width:0"><div class="post-name">@${uname}</div><div class="post-time">${timeAgo(post.created_at)}</div></div>
+        <div class="post-av" style="background:${uc(uname)};${avatarStyle}">${pf.avatar_url?`<img src="${pf.avatar_url}">`:`<span>${uname[0].toUpperCase()}</span>`}</div>
+        <div style="flex:1;min-width:0"><div class="post-name" style="${nameStyle}">@${uname}${badgeEmoji?` <span style="font-size:13px">${badgeEmoji}</span>`:''}</div><div class="post-time">${timeAgo(post.created_at)}</div></div>
         ${post.user_id!==ME.id?`<button class="pa" style="margin-left:auto;font-size:11px" onclick="chatWith('${post.user_id}')">Message</button>`:''}
       </div>
       ${post.content?`<div class="post-body">${esc(post.content)}</div>`:''}
@@ -3409,7 +3413,7 @@ async function globalSearch(q){
       </div>`;
     }).join('');
   }else{
-    const{data}=await sb.from('posts').select('*,profiles(username,avatar_url)').ilike('content','%'+q+'%').order('created_at',{ascending:false}).limit(20);
+    const{data}=await sb.from('posts').select('*,profiles(username,avatar_url,np_items)').ilike('content','%'+q+'%').order('created_at',{ascending:false}).limit(20);
     if(!data?.length){el.innerHTML='<div style="padding:16px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No posts found</div>';return;}
     el.innerHTML=data.map(p=>{
       const pf=p.profiles||{};
@@ -3705,8 +3709,8 @@ function prevStory(){
 
 // -- COMMENTS --
 async function openComments(postId){
-  const{data:post}=await sb.from('posts').select('*,profiles(username,avatar_url)').eq('id',postId).single();
-  const{data:comments}=await sb.from('post_comments').select('*,profiles(username,avatar_url)').eq('post_id',postId).order('created_at',{ascending:true});
+  const{data:post}=await sb.from('posts').select('*,profiles(username,avatar_url,np_items)').eq('id',postId).single();
+  const{data:comments}=await sb.from('post_comments').select('*,profiles(username,avatar_url,np_items)').eq('post_id',postId).order('created_at',{ascending:true});
   const pf=post?.profiles||{};
   document.getElementById('comments-modal-body').innerHTML=`
     <div class="modal-x" onclick="closeModal('comments-modal')">✕</div>
@@ -4677,6 +4681,24 @@ function uc(s){
   let h=0;for(const c of(s||'?'))h=(h*31+c.charCodeAt(0))&0xffff;return p[h%p.length];
 }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+
+// Returns {nameStyle, badgeEmoji, avatarStyle} for a user based on their np_items
+function getNPStyles(npItems){
+  if(!npItems||typeof npItems!=='object')return{nameStyle:'',badgeEmoji:'',avatarStyle:''};
+  let nameStyle='',badgeEmoji='',avatarStyle='';
+  // Username colors
+  const uColors={username_red:'#ff3864',username_gold:'#ffd700',username_cyan:'#00e5ff',username_pink:'#ff69b4'};
+  for(const[k,v]of Object.entries(uColors)){if(npItems[k]){nameStyle=`color:${v}`;break;}}
+  if(npItems['username_rainbow'])nameStyle='background:linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;';
+  // Badges
+  const badges={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅',freeze_frame_badge:'⏸'};
+  for(const[k,v]of Object.entries(badges)){if(npItems[k]){badgeEmoji=v;break;}}
+  // Avatar borders
+  const bShadows={border_cyan:'0 0 0 3px rgba(0,229,255,.8),0 0 16px rgba(0,229,255,.4)',border_fire:'0 0 0 3px #ff6b00,0 0 20px #ff3800',border_diamond:'0 0 0 3px #b9f2ff,0 0 20px #7df9ff',border_pulse:'0 0 0 3px rgba(0,229,255,.6)'};
+  for(const[k,v]of Object.entries(bShadows)){if(npItems[k]){avatarStyle=`box-shadow:${v}`;break;}}
+  if(npItems['border_rainbow']||npItems['glow_up_frame'])avatarStyle='padding:2px;background:conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78);box-shadow:0 0 20px rgba(255,100,200,.4);';
+  return{nameStyle,badgeEmoji,avatarStyle};
+}
 function escAttr(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,50);}
 function timeAgo(ts){
   if(!ts)return'';
