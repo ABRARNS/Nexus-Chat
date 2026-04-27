@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, interactive-widget=resizes-content">
-<title>NEXUS-CHAT — Real Social Network</title>
+<title>NEXUS-CHAT v8.1 — Real Social Network</title>
 
 <!-- SEO -->
 <meta name="description" content="NEXUS is a real-time social network — DMs, group chats, 24-hour stories, a public feed, and more. Built for people who want a fast, minimal, distraction-free social experience.">
@@ -551,6 +551,10 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
 .store-card.trending::after{content:'🔥 TRENDING';position:absolute;top:8px;right:8px;font-size:8px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,#ff6b00,#ff2d78);color:#fff;padding:3px 8px;border-radius:var(--r99);font-family:var(--mono)}
 .store-card.new::after{content:'✨ NEW';position:absolute;top:8px;right:8px;font-size:8px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff;padding:3px 8px;border-radius:var(--r99);font-family:var(--mono)}
 .store-card.weekly::after{content:'📅 WEEK';position:absolute;top:8px;right:8px;font-size:7px;font-weight:800;letter-spacing:.5px;background:linear-gradient(135deg,#00c853,#00e5ff);color:#000;padding:3px 8px;border-radius:var(--r99);font-family:var(--mono)}
+.store-card.legendary{border-color:rgba(255,215,0,.5)!important;box-shadow:0 0 24px rgba(255,180,0,.15),0 0 48px rgba(255,100,0,.08)!important;background:linear-gradient(160deg,rgba(255,200,0,.06),rgba(255,100,0,.04),var(--card))!important}
+.store-card.legendary::after{content:'👑 LEGENDARY';position:absolute;top:8px;right:8px;font-size:8px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,#ffd700,#ff9500,#ff2d78);color:#000;padding:3px 8px;border-radius:var(--r99);font-family:var(--mono);animation:legendaryShine 2s ease-in-out infinite}
+@keyframes legendaryShine{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.85;filter:brightness(1.3)}}
+@keyframes richPulse{0%,100%{filter:drop-shadow(0 0 6px #ffd700) drop-shadow(0 0 12px #ff9500);transform:scale(1)}50%{filter:drop-shadow(0 0 14px #ffd700) drop-shadow(0 0 28px #ff9500) drop-shadow(0 0 40px #ff2d78);transform:scale(1.15)}}
 .store-card.owned{border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.04)}
 .store-preview{border-radius:var(--r12);height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;overflow:hidden;position:relative;background:var(--bg3)}
 .store-item-name{font-size:13px;font-weight:700;margin-bottom:3px;font-family:var(--display)}
@@ -3238,6 +3242,7 @@ function renderFeed(posts){
   if(!posts.length){el.innerHTML='<div style="color:var(--t4);font-family:var(--mono);font-size:13px;padding:10px 0">No posts yet!</div>';return;}
   el.innerHTML=posts.map(post=>{
     const pf=post.profiles||{},uname=pf.username||'?',liked=myLikedPosts.has(post.id);
+    if(pf.np_items)console.log('[NP]',uname,pf.np_items);
     const{nameStyle,badgeEmoji,avatarStyle}=getNPStyles(pf.np_items);
     return`<div class="post-card" data-post-id="${post.id}">
       <div class="post-head">
@@ -4686,23 +4691,33 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function getNPStyles(npItems){
   if(!npItems||typeof npItems!=='object')return{nameStyle:'',badgeEmoji:'',avatarStyle:''};
   let nameStyle='',badgeEmoji='',avatarStyle='';
-  // Username colors — use active key if set, else fall back to loop
+  // Username colors — active key wins, then rainbow (rarest), then plain colors
   const uColors={username_red:'#ff3864',username_gold:'#ffd700',username_cyan:'#00e5ff',username_pink:'#ff69b4'};
   const activeUsername=npItems['_active_username']||'';
-  if(activeUsername==='username_rainbow'){
-    nameStyle='background:linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;';
+  if(activeUsername==='username_rainbow'||(!activeUsername&&npItems['username_rainbow'])){
+    nameStyle='background:linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;';
   } else if(uColors[activeUsername]){
     nameStyle=`color:${uColors[activeUsername]}`;
+  } else if(!activeUsername){
+    // fallback: gold > cyan > pink > red (most expensive first)
+    const fallbackOrder=['username_gold','username_cyan','username_pink','username_red'];
+    for(const k of fallbackOrder){if(npItems[k]){nameStyle=`color:${uColors[k]}`;break;}}
   }
-  // Badges — use active key directly
-  const allBadges={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅',freeze_frame_badge:'⏸'};
+  // Badges — use active key, else fall back to first owned
+  const allBadges={badge_rich:'💰',badge_verified:'✅',badge_crown:'👑',badge_diamond:'💎',badge_star:'🌟',badge_rocket:'🚀',badge_fire:'🔥',badge_lightning:'⚡',freeze_frame_badge:'⏸'};
   const activeBadge=npItems['_active_badge']||'';
-  if(allBadges[activeBadge]) badgeEmoji=allBadges[activeBadge];
-  // Avatar borders — use active key directly
+  const resolvedBadge=activeBadge||(Object.keys(allBadges).find(k=>npItems[k])||'');
+  if(resolvedBadge==='badge_rich'){
+    badgeEmoji='<span style="font-size:13px;animation:richPulse 1.5s ease-in-out infinite;display:inline-block">💰</span>';
+  } else if(allBadges[resolvedBadge]){
+    badgeEmoji=allBadges[resolvedBadge];
+  }
+  // Avatar borders — use active key, else fall back to first owned
   const bShadows={border_cyan:'0 0 0 3px rgba(0,229,255,.8),0 0 16px rgba(0,229,255,.4)',border_fire:'0 0 0 3px #ff6b00,0 0 20px #ff3800',border_diamond:'0 0 0 3px #b9f2ff,0 0 20px #7df9ff',border_pulse:'0 0 0 3px rgba(0,229,255,.6)'};
   const activeBorder=npItems['_active_border']||'';
-  if(bShadows[activeBorder]) avatarStyle=`box-shadow:${bShadows[activeBorder]}`;
-  else if(activeBorder==='border_rainbow'||activeBorder==='glow_up_frame') avatarStyle='padding:2px;background:conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78);box-shadow:0 0 20px rgba(255,100,200,.4);';
+  const resolvedBorder=activeBorder||(Object.keys(bShadows).find(k=>npItems[k])||'');
+  if(bShadows[resolvedBorder]) avatarStyle=`box-shadow:${bShadows[resolvedBorder]}`;
+  else if((activeBorder||npItems['border_rainbow']||npItems['glow_up_frame'])&&(activeBorder==='border_rainbow'||activeBorder==='glow_up_frame'||(!activeBorder&&(npItems['border_rainbow']||npItems['glow_up_frame'])))) avatarStyle='padding:2px;background:conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78);box-shadow:0 0 20px rgba(255,100,200,.4);';
   return{nameStyle,badgeEmoji,avatarStyle};
 }
 function escAttr(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,50);}
@@ -4781,6 +4796,7 @@ const NP_SHOP=[
   {id:'badge_fire',name:'🔥 Fire',desc:'Fire badge',price:400,cat:4},
   {id:'badge_rocket',name:'🚀 Rocket',desc:'Rocket badge',price:600,cat:4},
   {id:'badge_verified',name:'✅ Verified',desc:'Verified checkmark',price:3000,cat:4,tag:'new'},
+  {id:'badge_rich',name:'💰 Rich',desc:'Only the wealthiest souls on NEXUS carry this. Legendary status. Impossible to ignore.',price:1000000000,cat:4,tag:'legendary'},
 
   // THEMES (cat 5)
   {id:'theme_ocean',name:'🌊 Ocean',desc:'Deep navy & teal — calm ocean vibes',price:700,cat:5,tag:'weekly'},
@@ -4829,7 +4845,8 @@ function renderStorePreview(item){
     return`<div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:${bcolors[item.id]||'0 0 0 3px var(--cyan)'}">👤</div>`;
   }
   if(item.id.startsWith('badge_')){
-    const emojis={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅'};
+    const emojis={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅',badge_rich:'💰'};
+    if(item.id==='badge_rich') return`<div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700"><span style="color:var(--cyan)">@You</span><span style="font-size:22px;filter:drop-shadow(0 0 8px #ffd700) drop-shadow(0 0 16px #ff9500);animation:richPulse 1.5s ease-in-out infinite">💰</span></div>`;
     return`<div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700"><span style="color:var(--cyan)">@You</span><span style="font-size:20px">${emojis[item.id]||'🏅'}</span></div>`;
   }
   if(item.id.startsWith('theme_')){
@@ -4868,7 +4885,7 @@ function renderStoreCard(item){
   const owned=_npItems[item.id];
   const canBuy=_npBalance>=item.price&&!owned;
   const equipped=owned&&getEquipped(item.id);
-  const tagClass=item.tag==='trending'?'trending':item.tag==='new'?'new':item.tag==='weekly'?'weekly':'';
+  const tagClass=item.tag==='trending'?'trending':item.tag==='new'?'new':item.tag==='weekly'?'weekly':item.tag==='legendary'?'legendary':'';
   let btn='';
   if(owned){
     if(equipped) btn=`<button class="store-buy-btn" style="background:rgba(255,45,120,.12);color:var(--pink);border:1px solid rgba(255,45,120,.25);width:100%;padding:8px;border-radius:var(--r8);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)" onclick="unequipItem('${item.id}')">✕ Remove</button>`;
@@ -4890,7 +4907,7 @@ function renderStoreCard(item){
 function filterStore(cat){
   _currentStoreCat=cat;
   document.querySelectorAll('.store-cat-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.cat)===cat));
-  const items=cat===0?NP_SHOP.filter(i=>i.tag==='trending'||i.tag==='weekly'||i.tag==='new'):NP_SHOP.filter(i=>i.cat===cat);
+  const items=cat===0?NP_SHOP.filter(i=>i.tag==='trending'||i.tag==='weekly'||i.tag==='new'||i.tag==='legendary'):NP_SHOP.filter(i=>i.cat===cat);
   document.getElementById('store-grid').innerHTML=items.map(renderStoreCard).join('');
 }
 
@@ -5050,7 +5067,7 @@ function applyNPItem(itemId){
   }
 
   // === BADGES ===
-  const badges={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅',freeze_frame_badge:'⏸'};
+  const badges={badge_lightning:'⚡',badge_diamond:'💎',badge_star:'🌟',badge_crown:'👑',badge_fire:'🔥',badge_rocket:'🚀',badge_verified:'✅',freeze_frame_badge:'⏸',badge_rich:'💰'};
   if(badges[itemId]){
     // Remove old badge first
     document.querySelectorAll('.np-badge-el').forEach(el=>el.remove());
