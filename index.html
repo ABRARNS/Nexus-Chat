@@ -1825,7 +1825,7 @@ async function openBlockedList(){
     ${blocks.length?blocks.map(u=>`
       <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);background:var(--card2);margin-bottom:8px">
         <div class="blocked-av" style="background:${uc(u.username||'?')}">${u.avatar_url?`<img src="${u.avatar_url}">`:`<span>${(u.username||'?')[0].toUpperCase()}</span>`}</div>
-        <div style="font-size:13.5px;font-weight:600;flex:1">@${u.username||'?'}</div>
+        <div style="font-size:13.5px;font-weight:600;flex:1">${renderUsername(u,'13.5px')}</div>
         <button class="unblock-btn" onclick="unblockUser('${u.id}','${u.username||'?'}')">Unblock</button>
       </div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No blocked users</div>'}`;
   openModal('privacy-modal');
@@ -1864,7 +1864,7 @@ function renderConvos(profiles,filter=''){
     const t=last?timeAgo(last.created_at):'';
     return`<div class="ci ${currentChat===p.id?'on':''}" onclick="openChat('${p.id}')" id="ci-${p.id}">
       <div class="ci-av" style="background:${uc(p.username)}">${p.avatar_url?`<img src="${p.avatar_url}">`:`<span>${p.username[0].toUpperCase()}</span>`}<span class="ci-online ${on?'on':''}"></span></div>
-      <div class="ci-info"><div class="ci-row1"><span class="ci-name">@${p.username}</span><span class="ci-time">${t}</span></div><div class="ci-preview">${esc(preview)}</div></div>
+      <div class="ci-info"><div class="ci-row1"><span class="ci-name">${renderUsername(p)}</span><span class="ci-time">${t}</span></div><div class="ci-preview">${esc(preview)}</div></div>
     </div>`;
   }).join('');
 }
@@ -2293,7 +2293,7 @@ async function forwardMsg(msgId){
     ${allUsers.map(u=>`
       <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);cursor:pointer;transition:background .15s" onclick="doForward('${u.id}')" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''">
         <div style="width:36px;height:36px;border-radius:50%;background:${uc(u.username)};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:u.username[0].toUpperCase()}</div>
-        <div style="font-size:13.5px;font-weight:600">@${u.username}</div>
+        ${renderUsername(u,'13.5px')}
         <span style="margin-left:auto;font-size:11px;color:var(--cyan);font-family:var(--mono)">SEND →</span>
       </div>`).join('')}`;
   openModal('forward-modal');
@@ -2512,7 +2512,7 @@ function handleMentionInput(textareaEl,dropId,isGroup){
   drop.innerHTML=mentionSuggestions.map((u,i)=>`
     <div class="mention-item" id="mi-${i}" onclick="insertMention('${u.username}','${dropId}','${isGroup}')">
       <div class="mention-av" style="background:${uc(u.username)}">${u.avatar_url?`<img src="${u.avatar_url}">`:`<span>${u.username[0].toUpperCase()}</span>`}</div>
-      <span style="font-size:13px;font-weight:600">@${u.username}</span>
+      ${renderUsername(u,'13px')}
     </div>`).join('');
   drop.classList.add('on');
 }
@@ -2664,7 +2664,7 @@ function renderGroupRightPanel(){
     ${groupMembers.map(m=>`
       <div class="rp-member">
         <div class="rp-member-av" style="background:${uc(m.username||'?')}">${m.avatar_url?`<img src="${m.avatar_url}">`:`<span>${(m.username||'?')[0].toUpperCase()}</span>`}</div>
-        <div class="rp-member-name">@${m.username||'?'}</div>
+        <div class="rp-member-name">${renderUsername(m)}</div>
         <span class="role-badge ${m.role||'member'}">${m.role||''}</span>
         ${isAdmin&&m.id!==ME.id&&m.role!=='owner'?`<div style="position:relative"><button style="background:none;border:none;color:var(--t4);cursor:pointer;font-size:14px;padding:2px 6px" onclick="showMemberMenu(event,'${m.id}','${m.username||'?'}','${m.role||'member'}')">⋮</button></div>`:''}
       </div>`).join('')}
@@ -2780,7 +2780,7 @@ function searchAddMember(v){
   document.getElementById('add-member-results').innerHTML=res.map(u=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);cursor:pointer;transition:background .15s" onclick="addMemberToGroup('${u.id}','${u.username}')" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''">
       <div style="width:36px;height:36px;border-radius:50%;background:${uc(u.username)};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:u.username[0].toUpperCase()}</div>
-      <span style="font-size:13.5px;font-weight:600">@${u.username}</span>
+      ${renderUsername(u,'13.5px')}
       <span style="margin-left:auto;color:var(--cyan);font-size:11px;font-family:var(--mono)">ADD →</span>
     </div>`).join('')||'<div style="padding:12px;color:var(--t4);font-family:var(--mono);font-size:12px">No users found</div>';
 }
@@ -3009,7 +3009,7 @@ function searchGroupMembers(v){
   res.innerHTML=matches.map(u=>`
     <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--r12);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''" onclick="addToSelected('${u.id}','${u.username}','${u.avatar_url||''}')">
       <div style="width:30px;height:30px;border-radius:50%;background:${uc(u.username)};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:u.username[0].toUpperCase()}</div>
-      <span style="font-size:13px;font-weight:600">@${u.username}</span>
+      ${renderUsername(u,'13px')}
       <span style="margin-left:auto;color:var(--cyan);font-size:11px;font-family:var(--mono)">ADD +</span>
     </div>`).join('')||'<div style="padding:8px;color:var(--t4);font-family:var(--mono);font-size:12px">No users found</div>';
 }
@@ -3062,7 +3062,7 @@ async function openGroupInfo(){
     ${membersList.map(m=>`
       <div style="display:flex;align-items:center;gap:10px;padding:9px;border-radius:var(--r12);background:var(--card2);margin-bottom:6px">
         <div style="width:34px;height:34px;border-radius:50%;background:${uc(m.username||'?')};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${m.avatar_url?`<img src="${m.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:`<span>${(m.username||'?')[0].toUpperCase()}</span>`}</div>
-        <div style="font-size:13.5px;font-weight:600;flex:1">@${m.username||'?'}</div>
+        <div style="font-size:13.5px;font-weight:600;flex:1">${renderUsername(m,'13.5px')}</div>
         <span class="role-badge ${m.role||'member'}">${m.role||''}</span>
         ${m.id===ME.id?`<span style="font-size:9px;font-family:var(--mono);color:var(--cyan)">YOU</span>`:''}
         ${isAdmin&&m.id!==ME.id&&m.role!=='owner'?`<button style="background:none;border:none;color:var(--t4);cursor:pointer;font-size:16px;padding:2px 6px" onclick="showMemberMenu(event,'${m.id}','${m.username||'?'}','${m.role||'member'}')">⋮</button>`:''}
@@ -3134,7 +3134,7 @@ function renderPeople(users){
         ${u.avatar_url?`<img src="${u.avatar_url}">`:`<span>${u.username[0].toUpperCase()}</span>`}
         <div class="pcard-green-dot" style="display:${on?'block':'none'}"></div>
       </div>
-      <div class="pcard-name">@${u.username}</div>
+      <div class="pcard-name">${renderUsername(u)}</div>
       <div class="pcard-bio">${u.bio||'New to NEXUS 👋'}</div>
       <div style="display:flex;gap:6px;margin-top:4px">
         <button class="pcard-btn" onclick="chatWith('${u.id}')">💬</button>
@@ -3161,7 +3161,7 @@ function ncSearch(v){
   document.getElementById('nc-results').innerHTML=res.map(u=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''" onclick="chatWith('${u.id}');closeModal('new-chat-modal')">
       <div style="width:38px;height:38px;border-radius:50%;background:${uc(u.username)};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:u.username[0].toUpperCase()}</div>
-      <div><div style="font-size:13.5px;font-weight:600">@${u.username}</div><div style="font-size:11px;color:var(--t4);font-family:var(--mono)">${u.bio||'No bio'}</div></div>
+      <div>${renderUsername(u,'13.5px')}<div style="font-size:11px;color:var(--t4);font-family:var(--mono)">${u.bio||'No bio'}</div></div>
       <span style="margin-left:auto;font-size:11px;color:var(--cyan);font-family:var(--mono)">OPEN →</span>
     </div>`).join('')||'<div style="padding:12px;color:var(--t4);font-family:var(--mono);font-size:12px">No users found</div>';
 }
@@ -3172,7 +3172,7 @@ function renderRightPanel(p){
   document.getElementById('rp-body').innerHTML=`
     <div style="text-align:center;margin-bottom:16px">
       <div class="rp-av" style="background:${uc(p.username)}">${p.avatar_url?`<img src="${p.avatar_url}">`:`<span>${p.username[0].toUpperCase()}</span>`}</div>
-      <div class="rp-name">@${p.username}</div>
+      <div class="rp-name">${renderUsername(p,'15px')}</div>
       <div id="rp-status" style="font-size:11px;font-family:var(--mono);text-align:center;margin-bottom:6px;color:${on?'var(--green)':'var(--t4)'}">${on?'● Online':'○ Offline'}</div>
       <div class="rp-bio">${p.bio||'No bio yet.'}</div>
     </div>
@@ -3193,7 +3193,7 @@ async function viewProfile(uid){
     <div class="modal-x" onclick="closeModal('user-modal')">✕</div>
     <div style="text-align:center;margin-bottom:20px">
       <div style="width:80px;height:80px;border-radius:50%;background:${uc(p.username)};display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin:0 auto 12px;border:2px solid var(--cyan);overflow:hidden">${p.avatar_url?`<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:`<span>${p.username[0].toUpperCase()}</span>`}</div>
-      <div style="font-size:20px;font-weight:800;margin-bottom:4px">@${p.username}</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:4px">${renderUsername(p,'20px')}</div>
       <div style="font-size:11.5px;font-family:var(--mono);margin-bottom:10px;color:${on?'var(--green)':'var(--t4)'}">${on?'● Online':'○ Offline'}</div>
       <div style="font-size:13px;color:var(--t2);line-height:1.7;max-width:260px;margin:0 auto 16px">${p.bio||'No bio yet.'}</div>
     </div>
@@ -3419,7 +3419,7 @@ async function globalSearch(q){
       return`<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);transition:background .15s;cursor:pointer" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background=''">
         <div onclick="closeModal('search-modal');viewProfile('${u.id}')" style="display:flex;align-items:center;gap:10px;flex:1">
           <div style="width:40px;height:40px;border-radius:50%;background:${uc(u.username)};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;border:2px solid ${on?'var(--green)':'transparent'}">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:u.username[0].toUpperCase()}</div>
-          <div><div style="font-size:13.5px;font-weight:600">@${u.username}</div><div style="font-size:11px;color:var(--t4);font-family:var(--mono)">${u.bio||'No bio'}</div></div>
+          <div>${renderUsername(u,'13.5px')}<div style="font-size:11px;color:var(--t4);font-family:var(--mono)">${u.bio||'No bio'}</div></div>
         </div>
         ${u.id!==ME.id?`<button class="follow-btn ${isFollowing?'following':''}" onclick="toggleFollow('${u.id}',this)">${isFollowing?'Following':'Follow'}</button>`:''}
       </div>`;
@@ -3432,7 +3432,7 @@ async function globalSearch(q){
       return`<div style="background:var(--card2);border-radius:var(--r12);padding:12px;margin-bottom:8px;cursor:pointer" onclick="closeModal('search-modal');setView('feed',document.getElementById('nav-feed'))">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <div style="width:28px;height:28px;border-radius:50%;background:${uc(pf.username||'?')};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${pf.avatar_url?`<img src="${pf.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:( pf.username||'?')[0].toUpperCase()}</div>
-          <span style="font-size:12px;font-weight:600">@${pf.username||'?'}</span>
+          ${renderUsername(pf,'12px')}
           <span style="font-size:10px;color:var(--t4);font-family:var(--mono);margin-left:auto">${timeAgo(p.created_at)}</span>
         </div>
         <div style="font-size:13px;color:var(--t2);line-height:1.6">${esc((p.content||'').slice(0,120))}${p.content?.length>120?'…':''}</div>
@@ -3605,7 +3605,7 @@ async function loadStories(){
     item.innerHTML=`<div class="story-ring">
       <div class="story-av" style="background:${uc(pf.username||'?')}">${pf.avatar_url?`<img src="${pf.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%">`:`<span>${(pf.username||'?')[0].toUpperCase()}</span>`}</div>
     </div>
-    <div class="story-name">@${pf.username||'?'}</div>`;
+    <div class="story-name">${renderUsername(pf)}</div>`;
     bar.appendChild(item);
   });
   currentStories=storyGroups;
@@ -3730,7 +3730,7 @@ async function openComments(postId){
     <div class="post-card" style="margin-bottom:16px">
       <div class="post-head">
         <div class="post-av" style="background:${uc(pf.username||'?')}">${pf.avatar_url?`<img src="${pf.avatar_url}">`:`<span>${(pf.username||'?')[0].toUpperCase()}</span>`}</div>
-        <div><div class="post-name">@${pf.username||'?'}</div><div class="post-time">${timeAgo(post?.created_at||'')}</div></div>
+        <div><div class="post-name">${renderUsername(pf)}</div><div class="post-time">${timeAgo(post?.created_at||'')}</div></div>
       </div>
       ${post?.content?`<div class="post-body">${esc(post.content)}</div>`:''}
     </div>
@@ -3740,7 +3740,7 @@ async function openComments(postId){
         return`<div class="comment-item">
           <div class="comment-av" style="background:${uc(cu.username||'?')}">${cu.avatar_url?`<img src="${cu.avatar_url}">`:`<span>${(cu.username||'?')[0].toUpperCase()}</span>`}</div>
           <div class="comment-body">
-            <div class="comment-name">@${cu.username||'?'}</div>
+            <div class="comment-name">${renderUsername(cu)}</div>
             <div class="comment-text">${esc(cm.content)}</div>
             <div class="comment-time">${timeAgo(cm.created_at)}</div>
           </div>
@@ -3921,7 +3921,7 @@ async function openProfileVisitorsModal(){
     ${visitors.length?visitors.map(v=>`
       <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r12);background:var(--card2);margin-bottom:8px;cursor:pointer" onclick="closeModal('privacy-modal')">
         <div style="width:38px;height:38px;border-radius:50%;background:${uc(v.username||'?')};overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">${v.avatar_url?`<img src="${v.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block">`:`<span>${(v.username||'?')[0].toUpperCase()}</span>`}</div>
-        <div style="flex:1"><div style="font-size:13.5px;font-weight:600">@${v.username||'?'}</div><div style="font-size:10px;color:var(--t4);font-family:var(--mono)">${timeAgo(v.visited_at)}</div></div>
+        <div style="flex:1">${renderUsername(v,'13.5px')}<div style="font-size:10px;color:var(--t4);font-family:var(--mono)">${timeAgo(v.visited_at)}</div></div>
       </div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--t4);font-family:var(--mono);font-size:12px">No visitors yet</div>'}`;
   openModal('privacy-modal');
 }
@@ -4485,7 +4485,7 @@ function _renderStoryComments(rows,storyId){
     return`<div class="comment-item">
       <div class="comment-av" style="background:${avBg};color:#000">${avHtml}</div>
       <div class="comment-body">
-        <div class="comment-name">@${esc(pf.username||'?')}</div>
+        <div class="comment-name">${renderUsername(pf)}</div>
         <div class="comment-text">${esc(c.content)}</div>
         <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
           <span class="comment-time">${timeAgo(c.created_at)}</span>
@@ -4726,6 +4726,31 @@ function getNPStyles(npItems){
   if(bShadows[resolvedBorder]) avatarStyle=`box-shadow:${bShadows[resolvedBorder]}`;
   else if((activeBorder||npItems['border_rainbow']||npItems['glow_up_frame'])&&(activeBorder==='border_rainbow'||activeBorder==='glow_up_frame'||(!activeBorder&&(npItems['border_rainbow']||npItems['glow_up_frame'])))) avatarStyle='padding:2px;background:conic-gradient(from 0deg,#ff2d78,#ff9500,#ffd700,#00e5ff,#7c3aff,#ff2d78);box-shadow:0 0 20px rgba(255,100,200,.4);';
   return{nameStyle,badgeEmoji,avatarStyle};
+}
+
+// Render a styled username span with badge for any user object
+function renderUsername(u,size){
+  if(!u)return'@?';
+  const uname=u.username||u.name||'?';
+  const{nameStyle,badgeEmoji}=getNPStyles(u.np_items);
+  const fs=size||'inherit';
+  const isRainbow=nameStyle.includes('background-clip')||nameStyle.includes('-webkit-background-clip');
+  const nameSpan=isRainbow
+    ?`<span style="${nameStyle}display:inline-block;font-size:${fs}">@${uname}</span>`
+    :`<span style="font-size:${fs};${nameStyle}">@${uname}</span>`;
+  const badgeSpan=badgeEmoji?` <span style="font-size:12px">${badgeEmoji}</span>`:'';
+  return nameSpan+badgeSpan;
+}
+
+// Render avatar div with NP border for any user object
+function renderAvatar(u,cls,extraStyle){
+  if(!u)return'';
+  const uname=u.username||u.name||'?';
+  const col=uc(uname);
+  const{avatarStyle}=getNPStyles(u.np_items);
+  const combined=[avatarStyle,extraStyle||''].filter(Boolean).join(';');
+  const inner=u.avatar_url?`<img src="${u.avatar_url}">`:`<span>${uname[0].toUpperCase()}</span>`;
+  return`<div class="${cls||'av'}" style="background:${col};${combined}">${inner}</div>`;
 }
 function escAttr(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;').slice(0,50);}
 function timeAgo(ts){
