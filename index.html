@@ -2177,7 +2177,10 @@ function makeBubble(msg,isFirst,groupMode,membersList){
   const roleInfo=groupMode&&!isMe&&(groupMembersCache[msg.sender_id]?.role)?(groupMembersCache[msg.sender_id].role):'';
   const roleBadge=roleInfo&&roleInfo!=='member'?`<span class="role-badge ${roleInfo}">${roleInfo}</span>`:'';
   const avWrapStyle=avatarStyle?`style="${avatarStyle}"`:'';
-  const senderLabel=`<span style="${nameStyle}">@${uname}${badgeEmoji?` <span style="font-size:11px">${badgeEmoji}</span>`:''}</span>${roleBadge?` ${roleBadge}`:''}`;
+  const nameIsRainbow=nameStyle.includes('background-clip')||nameStyle.includes('-webkit-background-clip');
+  const senderLabel=nameIsRainbow
+    ?`<span style="${nameStyle}display:inline-block">@${uname}</span>${badgeEmoji?` <span style="font-size:11px">${badgeEmoji}</span>`:''}${roleBadge?` ${roleBadge}`:''}`
+    :`<span style="${nameStyle}">@${uname}${badgeEmoji?` <span style="font-size:11px">${badgeEmoji}</span>`:''}</span>${roleBadge?` ${roleBadge}`:''}`;
 
   const div=document.createElement('div');
   div.className=`msg-row ${isMe?'me':''} ${isFirst?'first':'stack'}`;
@@ -3244,10 +3247,14 @@ function renderFeed(posts){
     const pf=post.profiles||{},uname=pf.username||'?',liked=myLikedPosts.has(post.id);
     if(pf.np_items)console.log('[NP]',uname,pf.np_items);
     const{nameStyle,badgeEmoji,avatarStyle}=getNPStyles(pf.np_items);
+    const nameIsRainbow=nameStyle.includes('background-clip')||nameStyle.includes('-webkit-background-clip');
+    const nameEl=nameIsRainbow
+      ?`<span style="${nameStyle}display:inline-block">@${uname}</span>${badgeEmoji?` <span style="font-size:13px">${badgeEmoji}</span>`:''}`
+      :`<span style="${nameStyle}">@${uname}</span>${badgeEmoji?` <span style="font-size:13px">${badgeEmoji}</span>`:''}`;
     return`<div class="post-card" data-post-id="${post.id}">
       <div class="post-head">
         <div class="post-av" style="background:${uc(uname)};${avatarStyle}">${pf.avatar_url?`<img src="${pf.avatar_url}">`:`<span>${uname[0].toUpperCase()}</span>`}</div>
-        <div style="flex:1;min-width:0"><div class="post-name" style="${nameStyle}">@${uname}${badgeEmoji?` <span style="font-size:13px">${badgeEmoji}</span>`:''}</div><div class="post-time">${timeAgo(post.created_at)}</div></div>
+        <div style="flex:1;min-width:0"><div class="post-name">${nameEl}</div><div class="post-time">${timeAgo(post.created_at)}</div></div>
         ${post.user_id!==ME.id?`<button class="pa" style="margin-left:auto;font-size:11px" onclick="chatWith('${post.user_id}')">Message</button>`:''}
       </div>
       ${post.content?`<div class="post-body">${esc(post.content)}</div>`:''}
@@ -4695,7 +4702,7 @@ function getNPStyles(npItems){
   const uColors={username_red:'#ff3864',username_gold:'#ffd700',username_cyan:'#00e5ff',username_pink:'#ff69b4'};
   const activeUsername=npItems['_active_username']||'';
   if(activeUsername==='username_rainbow'||(!activeUsername&&npItems['username_rainbow'])){
-    nameStyle='background:linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;';
+    nameStyle='background:linear-gradient(90deg,#ff2d78,#ff9500,#00e5ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;display:inline-block;';
   } else if(uColors[activeUsername]){
     nameStyle=`color:${uColors[activeUsername]}`;
   } else if(!activeUsername){
