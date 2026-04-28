@@ -4573,10 +4573,28 @@ function searchGroupMsgs(v){
 
 // -- FLOATING NOTIFICATION --
 let floatNotifSenderId=null,floatNotifTimer=null;
+let _audioCtx=null;
+function _getAudioCtx(){
+  if(!_audioCtx){
+    _audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  }
+  if(_audioCtx.state==='suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+// Unlock audio on first user tap (required for mobile)
+document.addEventListener('touchstart',()=>{
+  if(!_audioCtx){_audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+  if(_audioCtx.state==='suspended')_audioCtx.resume();
+},{once:false,passive:true});
+document.addEventListener('click',()=>{
+  if(!_audioCtx){_audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+  if(_audioCtx.state==='suspended')_audioCtx.resume();
+},{once:false,passive:true});
+
 function playNotifSound(){
   try{
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    // Two-tone ding sound
+    const ctx=_getAudioCtx();
+    if(!ctx||ctx.state==='suspended')return;
     const play=(freq,start,dur,vol=0.3)=>{
       const o=ctx.createOscillator();
       const g=ctx.createGain();
@@ -4589,8 +4607,8 @@ function playNotifSound(){
       o.start(ctx.currentTime+start);
       o.stop(ctx.currentTime+start+dur);
     };
-    play(880,0,0.15,0.25);   // high note
-    play(1100,0.12,0.2,0.2); // higher note
+    play(880,0,0.15,0.25);
+    play(1100,0.12,0.2,0.2);
   }catch(e){}
 }
 
