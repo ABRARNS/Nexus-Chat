@@ -1722,6 +1722,20 @@ function startPresence(){
   inboxCh.on('broadcast',{event:'vibe'},({payload})=>{
     triggerVibeBomb(payload?.fromName||'Someone');
   });
+  // Instant message notification (no postgres_changes delay)
+  inboxCh.on('broadcast',{event:'msg'},async({payload})=>{
+    const msg=payload?.msg;
+    const sender=payload?.sender;
+    if(!msg)return;
+    loadConvos();
+    if(msg.sender_id===currentChat){
+      if(!loadedMsgs.find(m=>m.id===msg.id)) appendMsg(msg);
+      markReadDB(msg.id);
+    } else {
+      addNotif(sender||{username:'Someone'},msg.content?.slice(0,50)||'📷 image');
+      showFloatNotif(sender||{username:'Someone',avatar_url:''},msg.content||'📷 Sent an image',msg.sender_id);
+    }
+  });
   inboxCh.subscribe();
 }
 
@@ -2248,6 +2262,17 @@ async function sendMsg(){
   const msgData={sender_id:ME.id,receiver_id:currentChat,content:text||null,media_url,media_type};
   if(disappearingMode)msgData.disappears_at=new Date(Date.now()+disappearingMode).toISOString();
   const{data:newMsg,error}=await sb.from('messages').insert(msgData).select().single();
+  if(newMsg){
+    // Instantly notify receiver via broadcast (no delay unlike postgres_changes)
+    const notifCh=sb.channel(`inbox:${receiverId}`);
+    notifCh.subscribe(status=>{
+      if(status==='SUBSCRIBED'){
+        notifCh.send({type:'broadcast',event:'msg',payload:{msg:newMsg,sender:ME}}).then(()=>{
+          sb.removeChannel(notifCh);
+        });
+      }
+    });
+  }
   if(error){showToast('❌ '+error.message);bubble.remove();return;}
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
@@ -5188,9 +5213,16 @@ async function earnNP(amount,reason){
     if(window._doubleNPExpiry&&Date.now()<window._doubleNPExpiry) amount*=2;
     else window._doubleNP=false;
   }
-  _npBalance+=amount;
+  // Use DB increment to stay in sync across devices
+  const{data}=await sb.rpc('increment_np',{user_id:ME.id,amount}).catch(()=>({data:null}));
+  if(data!=null){
+    _npBalance=data;
+  } else {
+    // Fallback if RPC not available
+    _npBalance+=amount;
+    await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
+  }
   ME.np=_npBalance;
-  await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
   const badge=document.getElementById('np-balance-display');
   if(badge)badge.textContent=_npBalance.toLocaleString()+' NP';
   const pop=document.createElement('div');
