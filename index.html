@@ -215,6 +215,8 @@ body::after{content:'';position:fixed;top:-30%;left:10%;width:80%;height:70%;
 .auth-in:focus{border-color:rgba(0,200,255,.4);box-shadow:0 0 0 3px rgba(0,200,255,.06),0 0 20px rgba(0,180,255,.08)}
 .auth-in::placeholder{color:var(--t4)}
 .auth-btn{width:100%;padding:13px;border-radius:var(--r12);background:linear-gradient(135deg,#7c3aff,#00e5ff);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--display);transition:all .2s;margin-top:4px;position:relative;overflow:hidden;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.vc-input{width:44px!important;height:52px!important;text-align:center!important;font-size:22px!important;font-weight:800!important;padding:0!important;caret-color:var(--cyan);border:2px solid var(--border)!important;border-radius:var(--r8)!important}
+.vc-input:focus{border-color:var(--cyan)!important;box-shadow:0 0 0 3px rgba(0,229,255,.15)!important}
 .auth-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.15));pointer-events:none}
 .auth-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,200,255,.4)}
 .auth-btn:active{transform:translateY(0) scale(.98)}
@@ -869,6 +871,29 @@ textarea.fi{resize:vertical;min-height:70px;line-height:1.6}
         <button class="auth-btn" id="btn-up" onclick="doSignup()">CREATE ACCOUNT →</button>
       </div>
       <div style="margin-top:20px;text-align:center;font-size:10px;color:var(--t4);font-family:var(--mono)">By joining you agree to be awesome 🚀</div>
+    </div>
+  </div>
+</div>
+
+<!-- EMAIL VERIFICATION SCREEN -->
+<div id="verify-screen" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;flex-direction:column;padding:24px">
+  <div style="max-width:360px;width:100%;background:var(--card);border-radius:var(--r16);padding:32px 24px;border:1px solid var(--border)">
+    <div style="font-size:40px;text-align:center;margin-bottom:12px">📧</div>
+    <div style="font-size:20px;font-weight:800;text-align:center;margin-bottom:6px">Check your email</div>
+    <div style="font-size:13px;color:var(--t3);text-align:center;margin-bottom:24px;line-height:1.5">We sent a 6-digit verification code to<br><span id="verify-email-display" style="color:var(--cyan);font-family:var(--mono)"></span></div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px">
+      <input id="vc1" class="auth-in vc-input" maxlength="1" type="text" inputmode="numeric" oninput="vcNext(this,'vc2')" onkeydown="vcBack(event,this,'')">
+      <input id="vc2" class="auth-in vc-input" maxlength="1" type="text" inputmode="numeric" oninput="vcNext(this,'vc3')" onkeydown="vcBack(event,this,'vc1')">
+      <input id="vc3" class="auth-in vc-input" maxlength="1" type="text" inputmode="numeric" oninput="vcNext(this,'vc4')" onkeydown="vcBack(event,this,'vc2')">
+      <input id="vc4" class="auth-in vc-input" maxlength="1" type="text" inputmode="numeric" oninput="vcNext(this,'vc5')" onkeydown="vcBack(event,this,'vc3')">
+      <input id="vc5" class="auth-in vc-input" maxlength="1" type="text" inputmode="numeric" oninput="vcNext(this,'vc6')" onkeydown="vcBack(event,this,'vc4')">
+      <input id="vc6" class="auth-in vc-input" maxlength="1" type="text" inputmode="numeric" oninput="vcNext(this,'')" onkeydown="vcBack(event,this,'vc5')">
+    </div>
+    <div id="verify-err" style="color:#ff3864;font-size:12px;text-align:center;margin-bottom:12px;min-height:16px"></div>
+    <button class="auth-btn" id="btn-verify" onclick="doVerify()">VERIFY & CONTINUE →</button>
+    <div style="text-align:center;margin-top:16px">
+      <span style="font-size:12px;color:var(--t4)">Didn't get it? </span>
+      <button onclick="resendCode()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;font-family:var(--font)">Resend code</button>
     </div>
   </div>
 </div>
@@ -1561,13 +1586,73 @@ async function doSignup(){
   if(ex){showErr('Username taken');btn.disabled=false;btn.textContent='CREATE ACCOUNT →';return;}
   const{data,error}=await sb.auth.signUp({email,password:pass});
   if(error){showErr(error.message);btn.disabled=false;btn.textContent='CREATE ACCOUNT →';return;}
-  await sb.from('profiles').insert({id:data.user.id,username,bio:'',avatar_url:''});
-  if(!data.session){
-    const{data:ld,error:le}=await sb.auth.signInWithPassword({email,password:pass});
-    if(le){showErr('Account created! Please sign in.');btn.disabled=false;btn.textContent='CREATE ACCOUNT →';authTab('in');document.getElementById('in-email').value=email;return;}
-    ME={id:ld.user.id,username,bio:'',avatar_url:''};
-  }else{ME={id:data.user.id,username,bio:'',avatar_url:''};}
+  // Store pending signup details for after verification
+  window._pendingSignup={email,password:pass,username,userId:data.user?.id};
+  // Show verification screen
+  showVerifyScreen(email);
+  btn.disabled=false;btn.textContent='CREATE ACCOUNT →';
+}
+
+function showVerifyScreen(email){
+  document.getElementById('auth').style.display='none';
+  const vs=document.getElementById('verify-screen');
+  vs.style.display='flex';
+  document.getElementById('verify-email-display').textContent=email;
+  document.getElementById('vc1').focus();
+}
+
+function vcNext(el,nextId){
+  el.value=el.value.replace(/[^0-9]/g,'');
+  if(el.value&&nextId) document.getElementById(nextId)?.focus();
+  // Auto submit when all 6 filled
+  const code=['vc1','vc2','vc3','vc4','vc5','vc6'].map(id=>document.getElementById(id).value).join('');
+  if(code.length===6) doVerify();
+}
+
+function vcBack(e,el,prevId){
+  if(e.key==='Backspace'&&!el.value&&prevId) document.getElementById(prevId)?.focus();
+}
+
+async function doVerify(){
+  const code=['vc1','vc2','vc3','vc4','vc5','vc6'].map(id=>document.getElementById(id).value).join('');
+  if(code.length<6){document.getElementById('verify-err').textContent='Enter the full 6-digit code';return;}
+  const btn=document.getElementById('btn-verify');
+  btn.disabled=true;btn.textContent='Verifying...';
+  document.getElementById('verify-err').textContent='';
+  const email=window._pendingSignup?.email||'';
+  const{data,error}=await sb.auth.verifyOtp({email,token:code,type:'signup'});
+  if(error){
+    document.getElementById('verify-err').textContent='Wrong code. Try again.';
+    btn.disabled=false;btn.textContent='VERIFY & CONTINUE →';
+    ['vc1','vc2','vc3','vc4','vc5','vc6'].forEach(id=>{document.getElementById(id).value='';});
+    document.getElementById('vc1').focus();
+    return;
+  }
+  // Verified — create profile and enter app
+  const ps=window._pendingSignup||{};
+  const uid=data.user?.id||ps.userId;
+  if(uid&&ps.username){
+    const{data:existing}=await sb.from('profiles').select('id').eq('id',uid).single();
+    if(!existing) await sb.from('profiles').insert({id:uid,username:ps.username,bio:'',avatar_url:'',np:0});
+  }
+  // Sign in properly
+  const{data:ld}=await sb.auth.signInWithPassword({email:ps.email,password:ps.password});
+  if(ld?.user){
+    const{data:pf}=await sb.from('profiles').select('*').eq('id',ld.user.id).single();
+    ME=pf||{id:ld.user.id,username:ps.username,bio:'',avatar_url:''};
+  }
+  document.getElementById('verify-screen').style.display='none';
+  window._pendingSignup=null;
   showApp();
+}
+
+async function resendCode(){
+  const email=window._pendingSignup?.email||'';
+  if(!email)return;
+  await sb.auth.resend({type:'signup',email});
+  showToast('📧 Code resent!');
+  ['vc1','vc2','vc3','vc4','vc5','vc6'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('vc1').focus();
 }
 
 function showErr(m){const e=document.getElementById('auth-err');e.textContent=m;e.classList.add('show');}
@@ -3518,6 +3603,15 @@ async function loadFollowing(){
   myFollowing=new Set((data||[]).map(f=>f.following_id));
 }
 
+// Give NP to another user (not ME) — used for follower rewards
+async function earnNPForUser(uid,amount){
+  if(!uid||amount<=0)return;
+  const{data:p}=await sb.from('profiles').select('np').eq('id',uid).single().catch(()=>({data:null}));
+  if(p==null)return;
+  const newNp=(p.np||0)+amount;
+  await sb.from('profiles').update({np:newNp}).eq('id',uid);
+}
+
 async function toggleFollow(uid,btn){
   if(myFollowing.has(uid)){
     await sb.from('follows').delete().eq('follower_id',ME.id).eq('following_id',uid);
@@ -3530,6 +3624,10 @@ async function toggleFollow(uid,btn){
     btn.textContent='Following';btn.classList.add('following');
     showToast('✅ Following!');
     addNotifTyped(ME,'started following you','follow');
+    // Give 5 NP to the person being followed
+    earnNPForUser(uid,5);
+    // Give 1 NP to me for following someone
+    earnNP(1,'Followed someone');
   }
 }
 
@@ -5208,21 +5306,16 @@ function applyAllNPItems(){
 // Earn NP — call this on actions
 async function earnNP(amount,reason){
   if(!ME?.id||amount<=0)return;
-  // Double NP if active and not expired
   if(window._doubleNP){
     if(window._doubleNPExpiry&&Date.now()<window._doubleNPExpiry) amount*=2;
     else window._doubleNP=false;
   }
-  // Use DB increment to stay in sync across devices
-  const{data}=await sb.rpc('increment_np',{user_id:ME.id,amount}).catch(()=>({data:null}));
-  if(data!=null){
-    _npBalance=data;
-  } else {
-    // Fallback if RPC not available
-    _npBalance+=amount;
-    await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
-  }
+  // Always fetch fresh balance from DB to stay in sync across devices
+  const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
+  if(profile!=null) _npBalance=profile.np||0;
+  _npBalance+=amount;
   ME.np=_npBalance;
+  await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
   const badge=document.getElementById('np-balance-display');
   if(badge)badge.textContent=_npBalance.toLocaleString()+' NP';
   const pop=document.createElement('div');
