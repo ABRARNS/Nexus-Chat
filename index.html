@@ -3526,7 +3526,7 @@ async function loadFollowing(){
 async function earnNPForUser(uid,amount){
   if(!uid||amount<=0)return;
   // Try RPC first (bypasses RLS), fallback to direct update
-  const{error}=await sb.rpc('add_np_to_user',{target_id:uid,amount}).catch(()=>({error:true}));
+  const{error}=await sb.rpc('add_np_to_user',{target_id:uid,amount}).then(r=>r).catch(()=>({error:true}));
   if(error){
     // Fallback: direct update (works if RLS allows it)
     const{data:p}=await sb.from('profiles').select('np').eq('id',uid).single().catch(()=>({data:null}));
@@ -5227,14 +5227,22 @@ function applyAllNPItems(){
 }
 
 // Earn NP — call this on actions
+const _npLastEarn={};
 async function earnNP(amount,reason){
   if(!ME?.id||amount<=0)return;
+  // Prevent console abuse - rate limit per reason (max once per 2s)
+  const key=ME.id+reason;
+  const now=Date.now();
+  if(_npLastEarn[key]&&now-_npLastEarn[key]<2000)return;
+  _npLastEarn[key]=now;
+  // Cap single earn at 50 NP max to prevent abuse
+  amount=Math.min(amount,50);
   if(window._doubleNP){
     if(window._doubleNPExpiry&&Date.now()<window._doubleNPExpiry) amount*=2;
     else window._doubleNP=false;
   }
   console.log('[NP] earning',amount,'for',reason,'user',ME.id);
-  const{data,error}=await sb.rpc('add_np_to_user',{target_id:ME.id,amount}).catch(e=>({error:e}));
+  const{data,error}=await sb.rpc('add_np_to_user',{target_id:ME.id,amount}).then(r=>r).catch(e=>({error:e}));
   console.log('[NP] rpc result',{data,error});
   if(error){
     const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
