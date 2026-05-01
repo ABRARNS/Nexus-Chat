@@ -3521,13 +3521,17 @@ async function loadFollowing(){
   myFollowing=new Set((data||[]).map(f=>f.following_id));
 }
 
-// Give NP to another user (not ME) — used for follower rewards
+// Give NP to another user (not ME) — uses RPC to bypass RLS
 async function earnNPForUser(uid,amount){
   if(!uid||amount<=0)return;
-  const{data:p}=await sb.from('profiles').select('np').eq('id',uid).single().catch(()=>({data:null}));
-  if(p==null)return;
-  const newNp=(p.np||0)+amount;
-  await sb.from('profiles').update({np:newNp}).eq('id',uid);
+  // Try RPC first (bypasses RLS), fallback to direct update
+  const{error}=await sb.rpc('add_np_to_user',{target_id:uid,amount}).catch(()=>({error:true}));
+  if(error){
+    // Fallback: direct update (works if RLS allows it)
+    const{data:p}=await sb.from('profiles').select('np').eq('id',uid).single().catch(()=>({data:null}));
+    if(p==null)return;
+    await sb.from('profiles').update({np:(p.np||0)+amount}).eq('id',uid);
+  }
 }
 
 async function toggleFollow(uid,btn){
@@ -5006,7 +5010,7 @@ async function initStore(){
   // Populate earn NP row
   const earnRow=document.getElementById('np-earn-row');
   if(earnRow&&!earnRow.hasChildNodes()){
-    const earns=[['📅','Daily Login','+10'],['💬','Message','+1'],['📝','Post','+5'],['❤️','Get Like','+2'],['🎙','Voice Msg','+3'],['💥','Vibe Bomb','+2'],['📖','7d Streak','+50']];
+    const earns=[['📅','Daily Login','+10'],['💬','Message','+1'],['📝','Post','+5'],['❤️','Get Like','+2'],['🎙','Voice Msg','+3'],['💥','Vibe Bomb','+2'],['📖','7d Streak','+50'],['👥','Get Follower','+5'],['➕','Follow Someone','+1']];
     earnRow.innerHTML=earns.map(([e,l,n])=>`<div style="flex-shrink:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r12);padding:10px 12px;text-align:center;min-width:82px"><div style="font-size:20px">${e}</div><div style="font-size:10px;color:var(--t3);margin:3px 0;line-height:1.2">${l}</div><div style="font-size:11px;font-weight:700;color:var(--cyan);font-family:var(--mono)">${n} NP</div></div>`).join('');
   }
   // Populate category buttons
@@ -5228,12 +5232,21 @@ async function earnNP(amount,reason){
     if(window._doubleNPExpiry&&Date.now()<window._doubleNPExpiry) amount*=2;
     else window._doubleNP=false;
   }
-  // Always fetch fresh balance from DB to stay in sync across devices
-  const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
-  if(profile!=null) _npBalance=profile.np||0;
-  _npBalance+=amount;
+  // Use RPC to increment NP safely
+  const{data,error}=await sb.rpc('add_np_to_user',{target_id:ME.id,amount}).catch(()=>({error:true}));
+  if(error){
+    // Fallback: fetch fresh then update
+    const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
+    if(profile!=null)_npBalance=profile.np||0;
+    _npBalance+=amount;
+    await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
+  } else {
+    // Fetch updated balance
+    const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
+    if(profile!=null)_npBalance=profile.np||0;
+    else _npBalance+=amount;
+  }
   ME.np=_npBalance;
-  await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
   const badge=document.getElementById('np-balance-display');
   if(badge)badge.textContent=_npBalance.toLocaleString()+' NP';
   const pop=document.createElement('div');
