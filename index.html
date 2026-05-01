@@ -5232,21 +5232,24 @@ async function earnNP(amount,reason){
     if(window._doubleNPExpiry&&Date.now()<window._doubleNPExpiry) amount*=2;
     else window._doubleNP=false;
   }
-  // Use RPC to increment NP safely
-  const{data,error}=await sb.rpc('add_np_to_user',{target_id:ME.id,amount}).catch(()=>({error:true}));
+  console.log('[NP] earning',amount,'for',reason,'user',ME.id);
+  const{data,error}=await sb.rpc('add_np_to_user',{target_id:ME.id,amount}).catch(e=>({error:e}));
+  console.log('[NP] rpc result',{data,error});
   if(error){
-    // Fallback: fetch fresh then update
     const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
+    console.log('[NP] fallback profile',profile);
     if(profile!=null)_npBalance=profile.np||0;
     _npBalance+=amount;
-    await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
+    const{error:ue}=await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
+    console.log('[NP] fallback update error',ue);
   } else {
-    // Fetch updated balance
     const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
+    console.log('[NP] updated profile',profile);
     if(profile!=null)_npBalance=profile.np||0;
     else _npBalance+=amount;
   }
   ME.np=_npBalance;
+  console.log('[NP] final balance',_npBalance);
   const badge=document.getElementById('np-balance-display');
   if(badge)badge.textContent=_npBalance.toLocaleString()+' NP';
   const pop=document.createElement('div');
