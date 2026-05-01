@@ -2277,6 +2277,7 @@ async function sendMsg(){
     });
   }
   if(error){showToast('❌ '+error.message);bubble.remove();return;}
+  console.log('[NP] about to earn, newMsg=',!!newMsg,'error=',error);
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
   if(chatChannel)chatChannel.send({type:'broadcast',event:'msg',payload:{...newMsg}});
