@@ -1489,7 +1489,11 @@ async function showApp(){
     applyAllNPItems();
   });
   // Daily login bonus
-  setTimeout(checkDailyBonus,3000);
+  setTimeout(()=>{
+    checkDailyBonus();
+    // Give daily NP bonus for engagement
+    giveDailyNPBonus();
+  },3000);
   loadBlocks();
   loadFollowing();
   loadConvos();
@@ -1566,10 +1570,32 @@ async function doSignup(){
   if(error){showErr(error.message);btn.disabled=false;btn.textContent='CREATE ACCOUNT →';return;}
   await sb.from('profiles').insert({id:data.user.id,username,bio:'',avatar_url:'',np:0});
   if(!data.session){
-    const{data:ld,error:le}=await sb.auth.signInWithPassword({email,password:pass});
-    if(le){showErr('Account created! Please sign in.');btn.disabled=false;btn.textContent='CREATE ACCOUNT →';authTab('in');document.getElementById('in-email').value=email;return;}
-    ME={id:ld.user.id,username,bio:'',avatar_url:''};
-  }else{ME={id:data.user.id,username,bio:'',avatar_url:''};}
+    // Email signup - try auto-login after short delay
+    showToast('📧 Check your email to verify, attempting auto-login...');
+    setTimeout(async()=>{
+      try{
+        const{data:ld,error:le}=await sb.auth.signInWithPassword({email,password:pass});
+        if(le){
+          // Auto-login failed - switch to login tab with email filled
+          showErr('Account created! Please check your email to verify, then sign in.');
+          btn.disabled=false;btn.textContent='CREATE ACCOUNT →';
+          authTab('in');
+          document.getElementById('in-email').value=email;
+          return;
+        }
+        // Auto-login success - set ME and show app
+        ME={id:ld.user.id,username,bio:'',avatar_url:'',np:0,np_items:{}};
+        showApp();
+      }catch(e){
+        showErr('Account created! Please sign in.');
+        btn.disabled=false;btn.textContent='CREATE ACCOUNT →';
+        authTab('in');
+        document.getElementById('in-email').value=email;
+      }
+    },1500);
+    return;
+  }
+  ME={id:data.user.id,username,bio:'',avatar_url:'',np:0,np_items:{}};
   showApp();
 }
 
@@ -4263,18 +4289,45 @@ async function initFCM(){
 
 async function enableNotifications(){
   try{
-    const permission=await Notification.requestPermission();
-    if(permission!=='granted'){showToast('❌ Blocked — enable in browser settings');return;}
-    await initFCM();
-    if(_fcmToken){
-      showToast('✅ Notifications enabled!');
-      const btn=document.getElementById('notif-enable-btn');
-      if(btn)btn.textContent='✅ Notifications On';
-      dismissNotifBanner();
-    }else{
-      showToast('⚠️ Could not subscribe, try again');
+    // Check if notifications are supported
+    if(!('Notification'in window)){
+      showToast('❌ Notifications not supported in this browser');
+      return;
     }
-  }catch(e){showToast('❌ '+e.message);}
+    const permission=await Notification.requestPermission();
+    if(permission==='denied'){
+      showToast('❌ Blocked — enable in browser settings');
+      const btn=document.getElementById('notif-enable-btn');
+      if(btn)btn.textContent='⚠️ Notifications Blocked';
+      return;
+    }
+    if(permission==='granted'){
+      // Already granted, try init
+      await initFCM();
+      if(_fcmToken){
+        showToast('✅ Notifications already enabled!');
+        const btn=document.getElementById('notif-enable-btn');
+        if(btn)btn.textContent='✅ Notifications On';
+        dismissNotifBanner();
+      }
+      return;
+    }
+    if(permission==='default'){
+      // User dismissed - try again
+      await initFCM();
+      if(_fcmToken){
+        showToast('✅ Notifications enabled!');
+        const btn=document.getElementById('notif-enable-btn');
+        if(btn)btn.textContent='✅ Notifications On';
+        dismissNotifBanner();
+      }else{
+        showToast('⚠️ Could not subscribe. Click the bell icon in browser address bar.');
+      }
+    }
+  }catch(e){
+    console.log('Notification error:',e);
+    showToast('❌ Error: '+e.message);
+  }
 }
 
 function checkNotifStatus(){
@@ -5287,6 +5340,26 @@ async function checkDailyBonus(){
   }
   await earnNP(10,'Daily Login');
   showToast(`📅 Daily login! +10 NP (streak: ${_npStreak} days)`);
+}
+
+// Daily NP bonus for engagement (different from streak bonus)
+function giveDailyNPBonus(){
+  if(!ME?.id)return;
+  const today=new Date().toDateString();
+  const lastBonus=localStorage.getItem('np_daily_engagement');
+  if(lastBonus===today)return; // Already given today
+  
+  const bonusAmount=5; // NP per day
+  sb.from('profiles').select('np').eq('id',ME.id).single().then(({data})=>{
+    const currentNP=data?.np||0;
+    sb.from('profiles').update({np:currentNP+bonusAmount}).eq('id',ME.id).then(()=>{
+      localStorage.setItem('np_daily_engagement',today);
+      _npBalance=currentNP+bonusAmount;
+      ME.np=_npBalance;
+      applyAllNPItems();
+      showToast('🎁 +'+bonusAmount+' NP daily bonus!');
+    }).catch(()=>{}); // Silent fail
+  });
 }
 
 function resetAllItems(){
