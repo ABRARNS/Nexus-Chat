@@ -3555,13 +3555,21 @@ async function loadFollowing(){
 // Give NP to another user (not ME) — uses RPC to bypass RLS
 async function earnNPForUser(uid,amount){
   if(!uid||amount<=0)return;
-  // Try RPC first (bypasses RLS), fallback to direct update
-  const{error}=await sb.rpc('add_np_to_user',{target_id:uid,amount}).then(r=>r).catch(()=>({error:true}));
-  if(error){
-    // Fallback: direct update (works if RLS allows it)
-    const{data:p}=await sb.from('profiles').select('np').eq('id',uid).single().catch(()=>({data:null}));
-    if(p==null)return;
-    await sb.from('profiles').update({np:(p.np||0)+amount}).eq('id',uid);
+  try {
+    // Try RPC first (bypasses RLS), fallback to direct update
+    const{error:rpcError}=await sb.rpc('add_np_to_user',{target_id:uid,amount}).then(r=>r).catch(()=>({error:true}));
+    if(rpcError){
+      // Fallback: direct update (works if RLS allows it)
+      const{data:p, error:fetchError}=await sb.from('profiles').select('np').eq('id',uid).single();
+      if(fetchError || !p)return;
+      const newBalance = (p.np || 0) + amount;
+      const{error:updateError}=await sb.from('profiles').update({np:newBalance}).eq('id',uid);
+      if(updateError){
+        console.error('[NP] Failed to give NP to user', uid, ':', updateError);
+      }
+    }
+  } catch(e) {
+    console.error('[NP] Exception in earnNPForUser:', e);
   }
 }
 
@@ -5299,31 +5307,38 @@ async function earnNP(amount,reason){
     else window._doubleNP=false;
   }
   console.log('[NP] earning',amount,'for',reason,'user',ME.id);
-  const{data,error}=await sb.rpc('add_np_to_user',{target_id:ME.id,amount}).then(r=>r).catch(e=>({error:e}));
-  console.log('[NP] rpc result',{data,error});
-  if(error){
-    const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
-    console.log('[NP] fallback profile',profile);
-    if(profile!=null)_npBalance=profile.np||0;
-    _npBalance+=amount;
-    const{error:ue}=await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
-    console.log('[NP] fallback update error',ue);
-  } else {
-    const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
-    console.log('[NP] updated profile',profile);
-    if(profile!=null)_npBalance=profile.np||0;
-    else _npBalance+=amount;
+  // Direct update method (more reliable)
+  try {
+    const{data:currentProfile, error:fetchError}=await sb.from('profiles').select('np').eq('id',ME.id).single();
+    if(fetchError || !currentProfile){
+      console.error('[NP] Could not fetch current profile:', fetchError);
+      showToast('❌ Could not update NP balance');
+      return;
+    }
+    const newBalance = (currentProfile.np || 0) + amount;
+    const{error:updateError}=await sb.from('profiles').update({np:newBalance}).eq('id',ME.id);
+    if(updateError){
+      console.error('[NP] Failed to update NP:', updateError);
+      showToast('❌ Could not update NP balance');
+      return;
+    }
+    // Update local state
+    _npBalance = newBalance;
+    ME.np = _npBalance;
+    // Update UI
+    const badge=document.getElementById('np-balance-display');
+    if(badge)badge.textContent=_npBalance.toLocaleString()+' NP';
+    // Show earning popup
+    const pop=document.createElement('div');
+    pop.className='np-earn-pop';
+    pop.textContent=`+${amount} NP`;
+    pop.style.cssText+=`;left:${10+Math.random()*30}%;bottom:80px`;
+    document.body.appendChild(pop);
+    setTimeout(()=>pop.remove(),1500);
+  } catch(e) {
+    console.error('[NP] Exception in earnNP:', e);
+    showToast('❌ Error updating NP balance');
   }
-  ME.np=_npBalance;
-  console.log('[NP] final balance',_npBalance);
-  const badge=document.getElementById('np-balance-display');
-  if(badge)badge.textContent=_npBalance.toLocaleString()+' NP';
-  const pop=document.createElement('div');
-  pop.className='np-earn-pop';
-  pop.textContent=`+${amount} NP`;
-  pop.style.cssText+=`;left:${10+Math.random()*30}%;bottom:80px`;
-  document.body.appendChild(pop);
-  setTimeout(()=>pop.remove(),1500);
 }
 
 // Daily login bonus
