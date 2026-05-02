@@ -2275,25 +2275,29 @@ async function sendMsg(){
   const msgData={sender_id:ME.id,receiver_id:currentChat,content:text||null,media_url,media_type};
   if(disappearingMode)msgData.disappears_at=new Date(Date.now()+disappearingMode).toISOString();
   const{data:newMsg,error}=await sb.from('messages').insert(msgData).select().single();
-  if(newMsg){
-    // Instantly notify receiver via broadcast (no delay unlike postgres_changes)
-    const notifCh=sb.channel(`inbox:${receiverId}`);
-    notifCh.subscribe(status=>{
-      if(status==='SUBSCRIBED'){
-        notifCh.send({type:'broadcast',event:'msg',payload:{msg:newMsg,sender:ME}}).then(()=>{
-          sb.removeChannel(notifCh);
-        });
-      }
-    });
-  }
   if(error){showToast('❌ '+error.message);bubble.remove();return;}
+  
+  // Message sent successfully
   console.log('[NP] about to earn, newMsg=',!!newMsg,'error=',error);
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
   if(chatChannel)chatChannel.send({type:'broadcast',event:'msg',payload:{...newMsg}});
+  
+  // Notify receiver via broadcast
+  const notifCh=sb.channel(`inbox:${currentChat}`);
+  notifCh.subscribe(status=>{
+    if(status==='SUBSCRIBED'){
+      notifCh.send({type:'broadcast',event:'msg',payload:{msg:newMsg,sender:ME}}).then(()=>{
+        sb.removeChannel(notifCh);
+      });
+    }
+  });
+  
+  // Award NP for sending message
   console.log('[NP] CALLING earnNP(1, "Send Message") - ME.id:', ME?.id);
   console.log('[NP-DEBUG] sendMsg: About to call earnNP(1, "Send Message")');
   earnNP(1,'Send Message');
+  
   // Send push notification to receiver
   sendPushToUser(currentChat, `@${ME.username||'Someone'}`, text||'📷 Sent an image');
   loadConvos();
@@ -3356,13 +3360,17 @@ async function likePost(id,btn){
   btn.textContent='❤️ '+(n+1);
   triggerLikeAnim(btn);
   // Give +2 NP to post author when someone likes their post
-  const{data:post}=await sb.from('posts').select('user_id').eq('id',id).single().catch(()=>({data:null}));
-  console.log('[NP-DEBUG] likePost: post fetch result:', post, 'ME.id:', ME.id);
-  if(post&&post.user_id&&post.user_id!==ME.id){
-    console.log('[NP-DEBUG] likePost: calling earnNPForUser for post author', post.user_id);
-    earnNPForUser(post.user_id,2);
-  } else {
-    console.log('[NP-DEBUG] likePost: not giving NP (self-like or fetch failed)');
+  try {
+    const{data:post, error:postError}=await sb.from('posts').select('user_id').eq('id',id).single();
+    console.log('[NP-DEBUG] likePost: post fetch result:', {post, postError}, 'ME.id:', ME.id);
+    if(post&&post.user_id&&post.user_id!==ME.id&&!postError){
+      console.log('[NP-DEBUG] likePost: calling earnNPForUser for post author', post.user_id);
+      earnNPForUser(post.user_id,2);
+    } else {
+      console.log('[NP-DEBUG] likePost: not giving NP (self-like, fetch failed, or error)', {postError});
+    }
+  } catch(e) {
+    console.error('[NP-DEBUG] likePost: exception fetching post:', e);
   }
 }
 
@@ -5347,6 +5355,12 @@ async function earnNP(amount,reason){
     console.error('[NP-DEBUG] Exception in earnNP:', e);
     showToast('❌ Error updating NP');
   }
+}
+
+// Test NP earning - call this in console: testEarnNP()
+function testEarnNP(){
+  console.log('Testing NP earning...');
+  earnNP(5, 'Test');
 }
 
 // Daily login bonus
