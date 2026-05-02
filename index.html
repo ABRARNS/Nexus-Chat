@@ -1483,20 +1483,13 @@ async function showApp(){
   initStatusUI();
   // Load NP balance and apply owned items
   sb.from('profiles').select('np,np_items').eq('id',ME.id).single().then(({data})=>{
-    console.log('[NP-DEBUG] Initial NP load: data=', data);
     _npBalance=data?.np||0;
     _npItems=data?.np_items||{};
     ME.np=_npBalance;ME.np_items=_npItems;
-    console.log('[NP-DEBUG] Initial _npBalance set to:', _npBalance);
-    document.getElementById('np-balance-display').textContent=_npBalance.toLocaleString()+' NP';
     applyAllNPItems();
-  }).catch(err => {
-    console.error('[NP-DEBUG] Error loading initial NP:', err);
   });
   // Daily login bonus
-  setTimeout(()=>{
-    checkDailyBonus();
-  },3000);
+  setTimeout(checkDailyBonus,3000);
   loadBlocks();
   loadFollowing();
   loadConvos();
@@ -1571,35 +1564,18 @@ async function doSignup(){
   if(ex){showErr('Username taken');btn.disabled=false;btn.textContent='CREATE ACCOUNT →';return;}
   const{data,error}=await sb.auth.signUp({email,password:pass});
   if(error){showErr(error.message);btn.disabled=false;btn.textContent='CREATE ACCOUNT →';return;}
-  await sb.from('profiles').insert({id:data.user.id,username,bio:'',avatar_url:'',np:0});
-  if(!data.session){
-    // Email signup - try auto-login after short delay
-    showToast('📧 Check your email to verify, attempting auto-login...');
-    setTimeout(async()=>{
-      try{
-        const{data:ld,error:le}=await sb.auth.signInWithPassword({email,password:pass});
-        if(le){
-          // Auto-login failed - switch to login tab with email filled
-          showErr('Account created! Please check your email to verify, then sign in.');
-          btn.disabled=false;btn.textContent='CREATE ACCOUNT →';
-          authTab('in');
-          document.getElementById('in-email').value=email;
-          return;
-        }
-        // Auto-login success - set ME and show app
-        ME={id:ld.user.id,username,bio:'',avatar_url:'',np:0,np_items:{}};
-        showApp();
-      }catch(e){
-        showErr('Account created! Please sign in.');
-        btn.disabled=false;btn.textContent='CREATE ACCOUNT →';
-        authTab('in');
-        document.getElementById('in-email').value=email;
-      }
-    },1500);
-    return;
+  const uid=data.user?.id;
+  if(!uid){showErr('Signup failed, try again.');btn.disabled=false;btn.textContent='CREATE ACCOUNT →';return;}
+  await sb.from('profiles').insert({id:uid,username,bio:'',avatar_url:'',np:0}).catch(()=>{});
+  const{data:ld}=await sb.auth.signInWithPassword({email,password:pass});
+  if(ld?.session){
+    ME={id:uid,username,bio:'',avatar_url:'',np:0};
+    showApp();
+  }else{
+    showErr('Account created! Check your email to confirm, then sign in.');
+    btn.disabled=false;btn.textContent='CREATE ACCOUNT →';
+    authTab('in');document.getElementById('in-email').value=email;
   }
-  ME={id:data.user.id,username,bio:'',avatar_url:'',np:0,np_items:{}};
-  showApp();
 }
 
 function showErr(m){const e=document.getElementById('auth-err');e.textContent=m;e.classList.add('show');}
@@ -2310,7 +2286,6 @@ async function sendMsg(){
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
   if(chatChannel)chatChannel.send({type:'broadcast',event:'msg',payload:{...newMsg}});
-  console.log('[NP-DEBUG] sendMsg: calling earnNP(1, "Send Message")');
   earnNP(1,'Send Message');
   // Send push notification to receiver
   sendPushToUser(currentChat, `@${ME.username||'Someone'}`, text||'📷 Sent an image');
@@ -3304,6 +3279,7 @@ function renderFeed(posts){
   if(!posts.length){el.innerHTML='<div style="color:var(--t4);font-family:var(--mono);font-size:13px;padding:10px 0">No posts yet!</div>';return;}
   el.innerHTML=posts.map(post=>{
     const pf=post.profiles||{},uname=pf.username||'?',liked=myLikedPosts.has(post.id);
+    if(pf.np_items)console.log('[NP]',uname,pf.np_items);
     const{nameStyle,badgeEmoji,avatarStyle}=getNPStyles(pf.np_items);
     const nameIsRainbow=nameStyle.includes('background-clip')||nameStyle.includes('-webkit-background-clip');
     const nameEl=nameIsRainbow
@@ -3372,12 +3348,6 @@ async function likePost(id,btn){
   btn.classList.add('liked');
   btn.textContent='❤️ '+(n+1);
   triggerLikeAnim(btn);
-  
-  // Give NP to post author for getting a like (+2 NP)
-  const{data:post}=await sb.from('posts').select('user_id').eq('id',id).single();
-  if(post&&post.user_id&&post.user_id!==ME.id){
-    earnNPForUser(post.user_id,2);
-  }
 }
 
 async function deletePost(id){await sb.from('posts').delete().eq('id',id);showToast('🗑 Deleted');loadFeed();}
@@ -3559,39 +3529,14 @@ async function loadFollowing(){
 
 // Give NP to another user (not ME) — uses RPC to bypass RLS
 async function earnNPForUser(uid,amount){
-  console.log('[NP-DEBUG] earnNPForUser called: uid=', uid, 'amount=', amount);
-  if(!uid||amount<=0){
-    console.log('[NP-DEBUG] earnNPForUser: early return - uid or amount invalid');
-    return;
-  }
-  try {
-    // Try RPC first (bypasses RLS), fallback to direct update
-    console.log('[NP-DEBUG] Attempting RPC for user', uid);
-    const{error:rpcError}=await sb.rpc('add_np_to_user',{target_id:uid,amount}).then(r=>r).catch(()=>({error:true}));
-    console.log('[NP-DEBUG] RPC result:', {rpcError});
-    if(rpcError){
-      // Fallback: direct update (works if RLS allows it)
-      console.log('[NP-DEBUG] RPC failed, trying fallback update for user', uid);
-      const{data:p, error:fetchError}=await sb.from('profiles').select('np').eq('id',uid).single();
-      console.log('[NP-DEBUG] Fetch result:', {data:p, error:fetchError});
-      if(fetchError || !p){
-        console.error('[NP-DEBUG] Could not fetch profile for user', uid);
-        return;
-      }
-      const newBalance = (p.np || 0) + amount;
-      console.log('[NP-DEBUG] Updating user', uid, 'to balance', newBalance);
-      const{error:updateError}=await sb.from('profiles').update({np:newBalance}).eq('id',uid);
-      console.log('[NP-DEBUG] Update result:', {error:updateError});
-      if(updateError){
-        console.error('[NP-DEBUG] Failed fallback update for user', uid, ':', updateError);
-      } else {
-        console.log('[NP-DEBUG] ✅ Successfully gave', amount, 'NP to user', uid);
-      }
-    } else {
-      console.log('[NP-DEBUG] ✅ RPC succeeded for user', uid);
-    }
-  } catch(e) {
-    console.error('[NP-DEBUG] Exception in earnNPForUser:', e);
+  if(!uid||amount<=0)return;
+  // Try RPC first (bypasses RLS), fallback to direct update
+  const{error}=await sb.rpc('add_np_to_user',{target_id:uid,amount}).then(r=>r).catch(()=>({error:true}));
+  if(error){
+    // Fallback: direct update (works if RLS allows it)
+    const{data:p}=await sb.from('profiles').select('np').eq('id',uid).single().catch(()=>({data:null}));
+    if(p==null)return;
+    await sb.from('profiles').update({np:(p.np||0)+amount}).eq('id',uid);
   }
 }
 
@@ -4323,45 +4268,18 @@ async function initFCM(){
 
 async function enableNotifications(){
   try{
-    // Check if notifications are supported
-    if(!('Notification'in window)){
-      showToast('❌ Notifications not supported in this browser');
-      return;
-    }
     const permission=await Notification.requestPermission();
-    if(permission==='denied'){
-      showToast('❌ Blocked — enable in browser settings');
+    if(permission!=='granted'){showToast('❌ Blocked — enable in browser settings');return;}
+    await initFCM();
+    if(_fcmToken){
+      showToast('✅ Notifications enabled!');
       const btn=document.getElementById('notif-enable-btn');
-      if(btn)btn.textContent='⚠️ Notifications Blocked';
-      return;
+      if(btn)btn.textContent='✅ Notifications On';
+      dismissNotifBanner();
+    }else{
+      showToast('⚠️ Could not subscribe, try again');
     }
-    if(permission==='granted'){
-      // Already granted, try init
-      await initFCM();
-      if(_fcmToken){
-        showToast('✅ Notifications already enabled!');
-        const btn=document.getElementById('notif-enable-btn');
-        if(btn)btn.textContent='✅ Notifications On';
-        dismissNotifBanner();
-      }
-      return;
-    }
-    if(permission==='default'){
-      // User dismissed - try again
-      await initFCM();
-      if(_fcmToken){
-        showToast('✅ Notifications enabled!');
-        const btn=document.getElementById('notif-enable-btn');
-        if(btn)btn.textContent='✅ Notifications On';
-        dismissNotifBanner();
-      }else{
-        showToast('⚠️ Could not subscribe. Click the bell icon in browser address bar.');
-      }
-    }
-  }catch(e){
-    console.log('Notification error:',e);
-    showToast('❌ Error: '+e.message);
-  }
+  }catch(e){showToast('❌ '+e.message);}
 }
 
 function checkNotifStatus(){
@@ -5316,21 +5234,11 @@ function applyAllNPItems(){
 // Earn NP — call this on actions
 const _npLastEarn={};
 async function earnNP(amount,reason){
-  console.log('[NP-DEBUG] earnNP called: amount=', amount, 'reason=', reason, 'ME.id=', ME?.id);
-  if(!ME?.id||amount<=0){
-    console.log('[NP-DEBUG] Early return: ME.id missing or amount invalid');
-    return;
-  }
+  if(!ME?.id||amount<=0)return;
   // Prevent console abuse - rate limit per reason (max once per 2s)
   const key=ME.id+reason;
   const now=Date.now();
-  const lastTime = _npLastEarn[key];
-  const timeSinceLastEarn = lastTime ? now-lastTime : 'first time';
-  console.log('[NP-DEBUG] Rate limit check: key=', key, 'last=', lastTime, 'timeSince=', timeSinceLastEarn);
-  if(_npLastEarn[key]&&now-_npLastEarn[key]<2000){
-    console.log('[NP-DEBUG] BLOCKED by rate limit (< 2000ms)');
-    return;
-  }
+  if(_npLastEarn[key]&&now-_npLastEarn[key]<2000)return;
   _npLastEarn[key]=now;
   // Cap single earn at 50 NP max to prevent abuse
   amount=Math.min(amount,50);
@@ -5338,50 +5246,32 @@ async function earnNP(amount,reason){
     if(window._doubleNPExpiry&&Date.now()<window._doubleNPExpiry) amount*=2;
     else window._doubleNP=false;
   }
-  console.log('[NP-DEBUG] About to update NP. Current _npBalance=', _npBalance, 'amount=', amount);
-  // Direct update method (more reliable)
-  try {
-    console.log('[NP-DEBUG] Fetching current profile...');
-    const{data:currentProfile, error:fetchError}=await sb.from('profiles').select('np').eq('id',ME.id).single();
-    console.log('[NP-DEBUG] Fetch result:', {currentProfile, fetchError});
-    if(fetchError || !currentProfile){
-      console.error('[NP-DEBUG] Could not fetch current profile:', fetchError);
-      showToast('❌ Could not update NP balance');
-      return;
-    }
-    const newBalance = (currentProfile.np || 0) + amount;
-    console.log('[NP-DEBUG] Updating NP from', currentProfile.np, 'to', newBalance);
-    const{error:updateError}=await sb.from('profiles').update({np:newBalance}).eq('id',ME.id);
-    console.log('[NP-DEBUG] Update result:', {updateError});
-    if(updateError){
-      console.error('[NP-DEBUG] Failed to update NP:', updateError);
-      showToast('❌ Could not update NP balance');
-      return;
-    }
-    // Update local state
-    _npBalance = newBalance;
-    ME.np = _npBalance;
-    console.log('[NP-DEBUG] ✅ SUCCESS! New balance=', _npBalance);
-    // Update UI
-    const badge=document.getElementById('np-balance-display');
-    console.log('[NP-DEBUG] Updating badge, found=', !!badge);
-    if(badge){
-      badge.textContent=_npBalance.toLocaleString()+' NP';
-      console.log('[NP-DEBUG] Badge updated to:', badge.textContent);
-    }
-    // Show earning popup
-    const pop=document.createElement('div');
-    pop.className='np-earn-pop';
-    pop.textContent=`+${amount} NP`;
-    pop.style.cssText+=`;left:${10+Math.random()*30}%;bottom:80px`;
-    document.body.appendChild(pop);
-    console.log('[NP-DEBUG] Popup created');
-    setTimeout(()=>{pop.remove(); console.log('[NP-DEBUG] Popup removed');},1500);
-    showToast(`✅ +${amount} NP for ${reason}`);
-  } catch(e) {
-    console.error('[NP-DEBUG] Exception in earnNP:', e);
-    showToast('❌ Error updating NP balance');
+  console.log('[NP] earning',amount,'for',reason,'user',ME.id);
+  const{data,error}=await sb.rpc('add_np_to_user',{target_id:ME.id,amount}).then(r=>r).catch(e=>({error:e}));
+  console.log('[NP] rpc result',{data,error});
+  if(error){
+    const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
+    console.log('[NP] fallback profile',profile);
+    if(profile!=null)_npBalance=profile.np||0;
+    _npBalance+=amount;
+    const{error:ue}=await sb.from('profiles').update({np:_npBalance}).eq('id',ME.id);
+    console.log('[NP] fallback update error',ue);
+  } else {
+    const{data:profile}=await sb.from('profiles').select('np').eq('id',ME.id).single().catch(()=>({data:null}));
+    console.log('[NP] updated profile',profile);
+    if(profile!=null)_npBalance=profile.np||0;
+    else _npBalance+=amount;
   }
+  ME.np=_npBalance;
+  console.log('[NP] final balance',_npBalance);
+  const badge=document.getElementById('np-balance-display');
+  if(badge)badge.textContent=_npBalance.toLocaleString()+' NP';
+  const pop=document.createElement('div');
+  pop.className='np-earn-pop';
+  pop.textContent=`+${amount} NP`;
+  pop.style.cssText+=`;left:${10+Math.random()*30}%;bottom:80px`;
+  document.body.appendChild(pop);
+  setTimeout(()=>pop.remove(),1500);
 }
 
 // Daily login bonus
