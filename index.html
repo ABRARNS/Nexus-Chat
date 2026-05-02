@@ -1491,8 +1491,6 @@ async function showApp(){
   // Daily login bonus
   setTimeout(()=>{
     checkDailyBonus();
-    // Give daily NP bonus for engagement
-    giveDailyNPBonus();
   },3000);
   loadBlocks();
   loadFollowing();
@@ -3369,6 +3367,12 @@ async function likePost(id,btn){
   btn.classList.add('liked');
   btn.textContent='❤️ '+(n+1);
   triggerLikeAnim(btn);
+  
+  // Give NP to post author for getting a like (+2 NP)
+  const{data:post}=await sb.from('posts').select('user_id').eq('id',id).single();
+  if(post&&post.user_id&&post.user_id!==ME.id){
+    earnNPForUser(post.user_id,2);
+  }
 }
 
 async function deletePost(id){await sb.from('posts').delete().eq('id',id);showToast('🗑 Deleted');loadFeed();}
@@ -5340,26 +5344,6 @@ async function checkDailyBonus(){
   }
   await earnNP(10,'Daily Login');
   showToast(`📅 Daily login! +10 NP (streak: ${_npStreak} days)`);
-}
-
-// Daily NP bonus for engagement (different from streak bonus)
-function giveDailyNPBonus(){
-  if(!ME?.id)return;
-  const today=new Date().toDateString();
-  const lastBonus=localStorage.getItem('np_daily_engagement');
-  if(lastBonus===today)return; // Already given today
-  
-  const bonusAmount=5; // NP per day
-  sb.from('profiles').select('np').eq('id',ME.id).single().then(({data})=>{
-    const currentNP=data?.np||0;
-    sb.from('profiles').update({np:currentNP+bonusAmount}).eq('id',ME.id).then(()=>{
-      localStorage.setItem('np_daily_engagement',today);
-      _npBalance=currentNP+bonusAmount;
-      ME.np=_npBalance;
-      applyAllNPItems();
-      showToast('🎁 +'+bonusAmount+' NP daily bonus!');
-    }).catch(()=>{}); // Silent fail
-  });
 }
 
 function resetAllItems(){
