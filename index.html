@@ -1483,10 +1483,15 @@ async function showApp(){
   initStatusUI();
   // Load NP balance and apply owned items
   sb.from('profiles').select('np,np_items').eq('id',ME.id).single().then(({data})=>{
+    console.log('[NP] Initial load - data:', data, 'ME.id:', ME.id);
     _npBalance=data?.np||0;
     _npItems=data?.np_items||{};
     ME.np=_npBalance;ME.np_items=_npItems;
+    console.log('[NP] Initial balance set to:', _npBalance);
+    document.getElementById('np-balance-display').textContent=_npBalance.toLocaleString()+' NP';
     applyAllNPItems();
+  }).catch(err => {
+    console.error('[NP] Initial load error:', err);
   });
   // Daily login bonus
   setTimeout(checkDailyBonus,3000);
@@ -2286,6 +2291,8 @@ async function sendMsg(){
   bubble.querySelector('.bubble')?.classList.remove('faded');
   bubble.dataset.id=newMsg.id;
   if(chatChannel)chatChannel.send({type:'broadcast',event:'msg',payload:{...newMsg}});
+  console.log('[NP] CALLING earnNP(1, "Send Message") - ME.id:', ME?.id);
+  console.log('[NP-DEBUG] sendMsg: About to call earnNP(1, "Send Message")');
   earnNP(1,'Send Message');
   // Send push notification to receiver
   sendPushToUser(currentChat, `@${ME.username||'Someone'}`, text||'📷 Sent an image');
@@ -3350,8 +3357,12 @@ async function likePost(id,btn){
   triggerLikeAnim(btn);
   // Give +2 NP to post author when someone likes their post
   const{data:post}=await sb.from('posts').select('user_id').eq('id',id).single().catch(()=>({data:null}));
+  console.log('[NP-DEBUG] likePost: post fetch result:', post, 'ME.id:', ME.id);
   if(post&&post.user_id&&post.user_id!==ME.id){
+    console.log('[NP-DEBUG] likePost: calling earnNPForUser for post author', post.user_id);
     earnNPForUser(post.user_id,2);
+  } else {
+    console.log('[NP-DEBUG] likePost: not giving NP (self-like or fetch failed)');
   }
 }
 
@@ -3534,12 +3545,34 @@ async function loadFollowing(){
 
 // Give NP to another user (not ME) — uses RPC to bypass RLS
 async function earnNPForUser(uid,amount){
-  if(!uid||amount<=0)return;
-  try{
-    const{data:p,error:fetchError}=await sb.from('profiles').select('np').eq('id',uid).single();
-    if(fetchError||!p)return;
-    await sb.from('profiles').update({np:(p.np||0)+amount}).eq('id',uid);
-  }catch(e){console.error('[NP] Error in earnNPForUser:',e);}
+  console.log('[NP-DEBUG] earnNPForUser called: uid=', uid, 'amount=', amount);
+  if(!uid||amount<=0){
+    console.log('[NP-DEBUG] earnNPForUser: early return - invalid params');
+    return;
+  }
+  try {
+    console.log('[NP-DEBUG] earnNPForUser: fetching profile for', uid);
+    const{data:p, error:fetchError}=await sb.from('profiles').select('np').eq('id',uid).single();
+    console.log('[NP-DEBUG] earnNPForUser: fetch result', {p, fetchError});
+
+    if(fetchError || !p){
+      console.error('[NP-DEBUG] earnNPForUser: failed to fetch profile for', uid, fetchError);
+      return;
+    }
+    const newBalance = (p.np || 0) + amount;
+    console.log('[NP-DEBUG] earnNPForUser: updating', uid, 'from', p.np, 'to', newBalance);
+
+    const{error:updateError}=await sb.from('profiles').update({np:newBalance}).eq('id',uid);
+    console.log('[NP-DEBUG] earnNPForUser: update result', {updateError});
+
+    if(updateError){
+      console.error('[NP-DEBUG] earnNPForUser: failed to update for', uid, updateError);
+    } else {
+      console.log('[NP-DEBUG] earnNPForUser: SUCCESS - gave', amount, 'NP to user', uid);
+    }
+  } catch(e) {
+    console.error('[NP-DEBUG] earnNPForUser exception:', e);
+  }
 }
 
 async function toggleFollow(uid,btn){
@@ -4187,6 +4220,7 @@ async function uploadAndSendVoice(blob,duration){
   sendPushToUser(currentChat,`@${ME.username||'Someone'}`,`🎙 Sent a voice message`);
   loadConvos();
   showToast('✅ Voice message sent!');
+  console.log('[NP-DEBUG] voice message: calling earnNP(3, "Voice Message")');
   earnNP(3,'Voice Message');
 }
 
@@ -5236,35 +5270,83 @@ function applyAllNPItems(){
 // Earn NP — call this on actions
 const _npLastEarn={};
 async function earnNP(amount,reason){
-  if(!ME?.id||amount<=0)return;
+  console.log('[NP-DEBUG] earnNP called with amount:', amount, 'reason:', reason, 'ME.id:', ME?.id, '_npBalance before:', _npBalance);
+
+  if(!ME?.id||amount<=0){
+    console.log('[NP-DEBUG] EARLY RETURN: ME.id missing or amount <= 0');
+    return;
+  }
+
   // Prevent console abuse - rate limit per reason (max once per 2s)
   const key=ME.id+reason;
   const now=Date.now();
-  if(_npLastEarn[key]&&now-_npLastEarn[key]<2000)return;
+  if(_npLastEarn[key]&&now-_npLastEarn[key]<2000){
+    console.log('[NP-DEBUG] BLOCKED by rate limit');
+    return;
+  }
   _npLastEarn[key]=now;
+
   // Cap single earn at 50 NP max to prevent abuse
   amount=Math.min(amount,50);
   if(window._doubleNP){
     if(window._doubleNPExpiry&&Date.now()<window._doubleNPExpiry) amount*=2;
     else window._doubleNP=false;
   }
-  try{
-    const{data:profile,error:fetchError}=await sb.from('profiles').select('np').eq('id',ME.id).single();
-    if(fetchError||!profile)return;
-    const newBalance=(profile.np||0)+amount;
+
+  console.log('[NP-DEBUG] About to update database. Amount:', amount, 'Reason:', reason);
+
+  try {
+    // First, get current balance from database
+    const{data:profile, error:fetchError}=await sb.from('profiles').select('np').eq('id',ME.id).single();
+    console.log('[NP-DEBUG] Database fetch result:', {profile, fetchError});
+
+    if(fetchError || !profile){
+      console.error('[NP-DEBUG] FAILED to fetch current balance:', fetchError);
+      showToast('❌ Cannot update NP - database error');
+      return;
+    }
+
+    const currentBalance = profile.np || 0;
+    const newBalance = currentBalance + amount;
+
+    console.log('[NP-DEBUG] Current DB balance:', currentBalance, 'New balance will be:', newBalance);
+
+    // Update database
     const{error:updateError}=await sb.from('profiles').update({np:newBalance}).eq('id',ME.id);
-    if(updateError)return;
-    _npBalance=newBalance;
-    ME.np=_npBalance;
+    console.log('[NP-DEBUG] Database update result:', {updateError});
+
+    if(updateError){
+      console.error('[NP-DEBUG] FAILED to update database:', updateError);
+      showToast('❌ Cannot update NP - update failed');
+      return;
+    }
+
+    // Update local state and UI
+    _npBalance = newBalance;
+    ME.np = _npBalance;
+    console.log('[NP-DEBUG] SUCCESS! Local balance updated to:', _npBalance);
+
     const badge=document.getElementById('np-balance-display');
-    if(badge)badge.textContent=_npBalance.toLocaleString()+' NP';
+    console.log('[NP-DEBUG] Badge element:', badge);
+    if(badge){
+      badge.textContent=_npBalance.toLocaleString()+' NP';
+      console.log('[NP-DEBUG] Badge text set to:', badge.textContent);
+    }
+
+    // Show earning popup
     const pop=document.createElement('div');
     pop.className='np-earn-pop';
     pop.textContent=`+${amount} NP`;
     pop.style.cssText+=`;left:${10+Math.random()*30}%;bottom:80px`;
     document.body.appendChild(pop);
     setTimeout(()=>pop.remove(),1500);
-  }catch(e){console.error('[NP] Error in earnNP:',e);}
+
+    console.log('[NP-DEBUG] NP earning completed successfully');
+
+  } catch(e) {
+    console.error('[NP-DEBUG] Exception in earnNP:', e);
+    showToast('❌ Error updating NP');
+  }
 }
 
 // Daily login bonus
@@ -5283,6 +5365,7 @@ async function checkDailyBonus(){
     _npStreak=1;
     localStorage.setItem('np_streak','1');
   }
+  console.log('[NP-DEBUG] daily login: calling earnNP(10, "Daily Login")');
   await earnNP(10,'Daily Login');
   showToast(`📅 Daily login! +10 NP (streak: ${_npStreak} days)`);
 }
